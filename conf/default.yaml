@@ -1,0 +1,29 @@
+hydra:
+  run:
+    dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/hydra/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+
+defaults:
+  - _self_
+  - dataset: PB_WallSuperHeat
+
+log:
+  log_dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/train_log/
+
+train:
+  max_epochs: 20
+  batch_size: 8
+  shuffle_data: True
+  time_window: 1
+
+torch_dataset_name: temp_dataset 
+
+model:
+  model_name: fno
+
+optimizer:
+  initial_lr: 1e-3
+
+lr_scheduler:
+  factor: 0.5
+  patience: 100
+  min_lr: 1e-8
