@@ -1,6 +1,5 @@
 from omegaconf import DictConfig, OmegaConf
 import hydra
-from hdf5_dataset import HDF5Dataset, TempDataset
 import torch
 from torch.utils.data import ConcatDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -8,7 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import subprocess
-from metrics import compute_metrics
+
+from op_lib.metrics import compute_metrics
+from op_lib.hdf5_dataset import HDF5Dataset, TempDataset
 
 @hydra.main(version_base=None, config_path='../conf', config_name='default')
 def train_app(cfg):

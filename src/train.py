@@ -1,6 +1,5 @@
 from omegaconf import DictConfig, OmegaConf
 import hydra
-from hdf5_dataset import HDF5Dataset, TempDataset, TempInputDataset, VelDataset
 import torch
 from torch import nn
 import torchvision
@@ -10,14 +9,15 @@ from torch.utils.data import ConcatDataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
-import apex
-from unet import UNet2d 
 import numpy as np
 from neuralop.models import FNO
-from temp_trainer import TempTrainer
-from vel_trainer import VelTrainer
 from pathlib import Path
 import os
+
+from op_lib.hdf5_dataset import HDF5Dataset, TempDataset, TempInputDataset, VelDataset
+from op_lib.unet import UNet2d 
+from op_lib.temp_trainer import TempTrainer
+from op_lib.vel_trainer import VelTrainer
 
 torch_dataset_map = {
     'temp_dataset': TempDataset,

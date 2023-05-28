@@ -1,4 +1,3 @@
-from hdf5_dataset import HDF5Dataset, TempVelDataset
 import torch
 from torch import nn
 import torchvision
@@ -9,6 +8,8 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
+
+from .hdf5_dataset import HDF5Dataset, TempVelDataset
 
 class VelTrainer:
     def __init__(self,
