@@ -3,6 +3,7 @@
 
 # FFMPEG video output
 *.mp4
+output.gif
 
 # image directories
 im/

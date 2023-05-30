@@ -106,6 +106,9 @@ class TempInputDataset(HDF5Dataset):
             self._data['vely'][..., timestep] / 20,
         ], dim=0)
 
+    def get_dfun(self):
+        return self._data['dfun'][..., self.time_window:]
+
     def __getitem__(self, timestep):
         input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window)], dim=0)
         input = torch.cat([
@@ -114,6 +117,7 @@ class TempInputDataset(HDF5Dataset):
             self._data['vely'][..., timestep + self.time_window].unsqueeze(0) / 20,
         ], dim=0)
         label = self._data['temp'][..., timestep + self.time_window].unsqueeze(0)
+        dfun = self._data['dfun'][..., timestep + self.time_window].unsqueeze(0)
         return self._transform(input, label)
 
     def write_temp(self, temp, timestep):

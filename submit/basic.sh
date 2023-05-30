@@ -13,5 +13,5 @@ module load gcc/11.2.0
 
 python src/train.py \
 	dataset=PB_SubCooled \
-	experiment=temp_uno \
+	experiment=temp_unet2d \
 	experiment.torch_dataset_name=temp_input_dataset

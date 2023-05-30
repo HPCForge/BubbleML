@@ -86,7 +86,7 @@ class TempTrainer:
                 labels.append(label[:, 0].detach().cpu())
         temps = torch.cat(temps, dim=0)
         labels = torch.cat(labels, dim=0)
-        metrics = compute_metrics(temps, labels)
+        metrics = compute_metrics(temps, labels, dataset.get_dfun().permute((2, 0, 1)))
         print(metrics)
         
         for i in range(len(temps)):
@@ -109,5 +109,6 @@ class TempTrainer:
             cm_object = plt_temp_arr(f, axarr[2], np.flipud(err), 1, 'Absolute Error')
             f.colorbar(cm_object, ax=axarr[2], fraction=0.05)
 
+            f.set_size_inches(w=8, h=3)
             plt.savefig(f'test_im/temp/{i_str}.png', dpi=600, transparent=True)
             plt.close()

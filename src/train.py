@@ -113,7 +113,9 @@ def train_app(cfg):
                            writer,
                            exp)
     print(trainer)
-    trainer.train(exp.train.max_epochs)
+
+    if not cfg.test_only:
+        trainer.train(exp.train.max_epochs)
     trainer.test(val_dataset.datasets[0])
 
     ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}.pt'

@@ -6,6 +6,8 @@ take the same approach.
 import torch
 import torch.nn.functional as F
 from dataclasses import dataclass
+import numpy as np
+import numba as nb
 
 from .losses import LpLoss
 
@@ -16,6 +18,7 @@ class Metrics:
     relative_error: float
     max_error: float
     boundary_rmse: float
+    interface_rmse: float
 
     def __str__(self):
         return f"""
@@ -24,15 +27,17 @@ class Metrics:
             Relative Error: {self.relative_error}
             Max Error: {self.max_error}
             Boundary RMSE: {self.boundary_rmse}
+            Interface RMSE: {self.interface_rmse}
         """
 
-def compute_metrics(pred, label):
+def compute_metrics(pred, label, dfun):
     return Metrics(
         mae=mae(pred, label),
         rmse=rmse(pred, label),
         relative_error=relative_error(pred, label),
         max_error=max_error(pred, label),
-        boundary_rmse=boundary_rmse(pred, label)
+        boundary_rmse=boundary_rmse(pred, label),
+        interface_rmse=interface_rmse(pred, label, dfun)
     )
 
 def mae(pred, label):
@@ -51,7 +56,6 @@ def rmse(pred, label):
     var_size = pred[0].numel() 
     sum_dim = 1 if pred.dim() == 2 else [1, 2]
     mses = ((pred - label) ** 2).sum(dim=sum_dim) / var_size
-    print(mses.size())
     return torch.sqrt(mses).sum() / batch_size
 
 def max_error(pred, label):
@@ -76,7 +80,26 @@ def boundary_rmse(pred, label):
     print(bpred.size())
     return rmse(bpred, blabel) 
 
-def bubble_rmse(pred, label, dfun):
-    #TODO: implement this, ugh!
+def interface_rmse(pred, label, dfun):
     assert pred.size() == label.size()
-    assert pred.size() == bubble_mask.size()
+    assert pred.size() == dfun.size()
+    mses = []
+    for i in range(pred.size(0)):
+        squared_error = (pred[i] - label[i]) ** 2
+        mask = torch.tensor(get_interface_mask(dfun[i].numpy()))
+        interface_mse = torch.mean(squared_error[mask])
+        mses.append(interface_mse)
+    return torch.sqrt(torch.tensor(mses)).sum() / pred.size(0)
+
+@nb.njit
+def get_interface_mask(dgrid):
+    interface = np.zeros(dgrid.shape).astype(np.bool_)
+    [rows, cols] = dgrid.shape
+    for i in range(rows):
+        for j in range(cols):
+            adj = ((i < rows - 1 and dgrid[i][j] * dgrid[i+1, j  ] <= 0) or
+                   (i > 0 and dgrid[i][j] * dgrid[i-1, j  ] <= 0) or
+                   (j < cols - 1 and dgrid[i][j] * dgrid[i,   j+1] <= 0) or
+                   (j > 0 and dgrid[i][j] * dgrid[i,   j-1] <= 0))
+            interface[i][j] = adj
+    return interface
