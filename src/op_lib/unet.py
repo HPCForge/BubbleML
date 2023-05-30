@@ -16,6 +16,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 """
+
 from collections import OrderedDict
 import torch
 from torch import nn
@@ -94,7 +95,7 @@ class UNet2d(nn.Module):
                         ),
                     ),
                     (name + "norm1", nn.BatchNorm2d(num_features=features)),
-                    (name + "tanh1", nn.Tanh()),
+                    (name + "tanh1", nn.GELU()),
                     (
                         name + "conv2",
                         nn.Conv2d(
@@ -106,7 +107,7 @@ class UNet2d(nn.Module):
                         ),
                     ),
                     (name + "norm2", nn.BatchNorm2d(num_features=features)),
-                    (name + "tanh2", nn.Tanh()),
+                    (name + "tanh2", nn.GELU()),
                 ]
             )
         )

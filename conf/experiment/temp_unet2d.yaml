@@ -1,0 +1,18 @@
+torch_dataset_name: temp_input_dataset 
+
+train:
+  max_epochs: 50 
+  batch_size: 8
+  shuffle_data: True
+  time_window: 3
+
+model:
+  model_name: unet2d
+
+optimizer:
+  initial_lr: 1e-3
+
+lr_scheduler:
+  factor: 0.5
+  patience: 100
+  min_lr: 1e-8

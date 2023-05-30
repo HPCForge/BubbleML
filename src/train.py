@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.models import FNO
+from neuralop.models import FNO, UNO
 from pathlib import Path
 import os
 
@@ -37,21 +37,22 @@ trainer_map = {
 }
 
 def build_datasets(cfg):
-    DatasetClass = torch_dataset_map[cfg.torch_dataset_name]
+    DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
+    time_window = cfg.experiment.train.time_window
     train_dataset = ConcatDataset([
-        DatasetClass(p, transform=True, time_window=cfg.train.time_window) for p in cfg.dataset.train_paths])
+        DatasetClass(p, transform=True, time_window=time_window) for p in cfg.dataset.train_paths])
     val_dataset = ConcatDataset([
-        DatasetClass(p, time_window=cfg.train.time_window) for p in cfg.dataset.val_paths])
+        DatasetClass(p, time_window=time_window) for p in cfg.dataset.val_paths])
     return train_dataset, val_dataset
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
     train_dataloader = DataLoader(train_dataset, 
-                                  batch_size=cfg.train.batch_size,
-                                  shuffle=cfg.train.shuffle_data,
+                                  batch_size=cfg.experiment.train.batch_size,
+                                  shuffle=cfg.experiment.train.shuffle_data,
                                   num_workers=1,
                                   pin_memory=True)
     val_dataloader = DataLoader(val_dataset, 
-                                batch_size=cfg.train.batch_size,
+                                batch_size=cfg.experiment.train.batch_size,
                                 shuffle=False,
                                 num_workers=1,
                                 pin_memory=True)
@@ -60,50 +61,67 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
 @hydra.main(version_base=None, config_path='../conf', config_name='default')
 def train_app(cfg):
     print(OmegaConf.to_yaml(cfg))
+    print(cfg.dataset.train_paths)
 
-    writer = SummaryWriter(log_dir=cfg.log.log_dir)
+    exp = cfg.experiment
+    writer = SummaryWriter(log_dir=cfg.log_dir)
 
     train_dataset, val_dataset = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
 
-    model_name = cfg.model.model_name.lower()
+    model_name = exp.model.model_name.lower()
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
 
-    assert model_name in ('unet2d', 'fno'), f'Model name {model_name} invalid'
+    assert model_name in ('unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
     if model_name == 'unet2d': 
         model = UNet2d(in_channels=in_channels,
-                       out_channels=out_channels).cuda().float()
+                       out_channels=out_channels,
+                       init_features=64)
     elif model_name == 'fno':
         model = FNO(n_modes=(16, 16),
-                    hidden_channels=32,
+                    hidden_channels=64,
                     in_channels=in_channels,
-                    out_channels=out_channels).cuda().float()
+                    out_channels=out_channels,
+                    n_layers=5)
+    elif model_name == 'uno':
+        model = UNO(in_channels=in_channels, 
+                    out_channels=out_channels,
+                    hidden_channels=64,
+                    projection_channels=64,
+                    uno_out_channels=[32,64,64,64,32],
+                    uno_n_modes=[[32,32],[16,16],[16,16],[16,16],[32,32]],
+                    uno_scalings=[[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],
+                    horizontal_skips_map=None,
+                    n_layers=5,
+                    domain_padding=0.2)
+    model = model.cuda().float()
     print(model)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.optimizer.initial_lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=exp.optimizer.initial_lr)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=cfg.lr_scheduler.patience,
-                                                   gamma=cfg.lr_scheduler.factor)
+                                                   step_size=exp.lr_scheduler.patience,
+                                                   gamma=exp.lr_scheduler.factor)
 
-    TrainerClass = trainer_map[cfg.torch_dataset_name]
+    TrainerClass = trainer_map[exp.torch_dataset_name]
     trainer = TrainerClass(model,
                            train_dataloader,
                            val_dataloader,
                            optimizer,
                            lr_scheduler,
                            writer,
-                           cfg)
+                           exp)
     print(trainer)
-    trainer.train(cfg.train.max_epochs)
+    trainer.train(exp.train.max_epochs)
+    trainer.test(val_dataset.datasets[0])
 
-    ckpt_file = f'{model.__class__.__name__}_{cfg.torch_dataset_name}.pt'
+    ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}.pt'
     ckpt_root = Path.home() / f'crsp/ai4ts/afeeney/thermal_models/{cfg.dataset.name}'
     Path(ckpt_root).mkdir(parents=True, exist_ok=True)
     ckpt_path = f'{ckpt_root}/{ckpt_file}'
     print(f'saving model to {ckpt_path}')
     torch.save(model, f'{ckpt_path}')
-    
+
 if __name__ == '__main__':
     train_app()

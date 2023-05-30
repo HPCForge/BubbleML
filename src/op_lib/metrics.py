@@ -7,17 +7,30 @@ import torch
 import torch.nn.functional as F
 from dataclasses import dataclass
 
+from .losses import LpLoss
+
 @dataclass
 class Metrics:
     mae: float
     rmse: float
+    relative_error: float
     max_error: float
     boundary_rmse: float
+
+    def __str__(self):
+        return f"""
+            MAE: {self.mae}
+            RMSE: {self.rmse}
+            Relative Error: {self.relative_error}
+            Max Error: {self.max_error}
+            Boundary RMSE: {self.boundary_rmse}
+        """
 
 def compute_metrics(pred, label):
     return Metrics(
         mae=mae(pred, label),
         rmse=rmse(pred, label),
+        relative_error=relative_error(pred, label),
         max_error=max_error(pred, label),
         boundary_rmse=boundary_rmse(pred, label)
     )
@@ -25,12 +38,17 @@ def compute_metrics(pred, label):
 def mae(pred, label):
     return F.l1_loss(pred, label)
 
+def relative_error(pred, label):
+    assert pred.size() == label.size()
+    loss = LpLoss(d=2, reductions='mean')
+    return loss(pred, label)
+
 def rmse(pred, label):
     r""" Assumes input has shape [b x h x w]
     """
     assert pred.size() == label.size()
     batch_size = pred.size(0)
-    var_size = pred[0].numel() #.size(1) * pred.size(2) 
+    var_size = pred[0].numel() 
     sum_dim = 1 if pred.dim() == 2 else [1, 2]
     mses = ((pred - label) ** 2).sum(dim=sum_dim) / var_size
     print(mses.size())

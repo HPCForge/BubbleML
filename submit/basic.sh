@@ -11,4 +11,7 @@ module load anaconda/2022.05
 conda activate mf-pytorch2
 module load gcc/11.2.0
 
-python src/train.py dataset=PB_WallSuperHeat torch_dataset_name=temp_input_dataset
+python src/train.py \
+	dataset=PB_SubCooled \
+	experiment=temp_uno \
+	experiment.torch_dataset_name=temp_input_dataset
