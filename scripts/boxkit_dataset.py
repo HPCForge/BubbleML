@@ -27,42 +27,8 @@ class BoilingDataset(Dataset):
             f.create_dataset('pressure', data=self._data['pres'])
             f.create_dataset('x', data=self._data['x'])
             f.create_dataset('y', data=self._data['y'])
-
-    def __len__(self):
-        # len is the number of timesteps.
-        # subtract 1 because the last timestep can
-        # only be used as a label
-        return self._data['temp'].size(2) - 1 
-
-    def __getitem__(self, timestep):
-        # TODO: use velx/vely input, only predict temp?
-        # predict all 3? Include velx/vely at t+1 in input?
-        temp_at_t = self._data['temp'][..., timestep]
-        velx_at_t = self._data['velx'][..., timestep]
-        vely_at_t = self._data['vely'][..., timestep]
-
-        temp_next = self._data['temp'][..., timestep + 1]
-        velx_next = self._data['velx'][..., timestep + 1]
-        vely_next = self._data['vely'][..., timestep + 1]
-
-        input = torch.stack([temp_at_t, velx_at_t, vely_at_t], dim=0)
-        label = torch.stack([temp_next, velx_next, vely_next], dim=0)
-        return input, label
-
-    def inv_reynolds(self):
-        return float(self._params['ins_invreynolds'])
-
-    def prandtl(self):
-        return float(self._params['ht_prandtl'])
-
-    def alpha_vapor(self):
-        r""" Computes the thermal diffusivity with mph_cpgas, mph_rhogas, mph_thcogas
-        https://en.wikipedia.org/wiki/Thermal_diffusivity
-        """
-        cp = float(self._params['mph_cpgas'])
-        rho = float(self._params['mph_rhogas'])
-        thco = float(self._params['mph_thcogas'])
-        return thco / (cp * rho)
+            f.create_dataset('real-runtime-params', data=self._runtime_params('real runtime paramters'))
+            f.create_dataset('int-runtime-params', data=self._runtime_params('integer runtime paramters'))
 
     def _load_data(self):
         frame_dicts = self._load_files()
@@ -79,6 +45,10 @@ class BoilingDataset(Dataset):
         for var in var_list:
             var_dict[var] = torch.stack(var_dict[var], -1)
         return var_dict
+
+    def _runtime_params(self, key):
+        with h5py.File(self._filenames[0], 'r') as f:
+            return f['real runtime parameters'][:]
 
     def _load_params(self):
         with h5py.File(self._filenames[0], 'r') as f:
@@ -122,17 +92,16 @@ class BoilingDataset(Dataset):
                 var_dict['x'][r:r+y_bs,c:c+x_bs] = x 
                 var_dict['y'][r:r+y_bs,c:c+x_bs] = y
 
-            print(var_dict)
-
             frames.append(var_dict)
         return frames
 
 if __name__ == '__main__':
-    target = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D_HDF5/')
-    base = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D/')
+    target = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/WallSuperheat-FC72-2D_HDF5/')
+    base = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/WallSuperheat-FC72-2D/')
     subdirs = glob.glob(f'{base}/*')
+    print(subdirs)
 
-    for subdir in subdirs[:1]:
+    for subdir in subdirs:
         print(subdir)
         b = BoilingDataset(subdir)
         dir_name = subdir[subdir.find('Twall-'):]
