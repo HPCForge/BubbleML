@@ -6,6 +6,7 @@ from torch.utils.data import ConcatDataset, Dataset
 from pathlib import Path
 import matplotlib.pyplot as plt
 import h5py
+from joblib import Parallel, delayed
 
 class BoilingDataset(Dataset):
     def __init__(self, directory):
@@ -48,7 +49,7 @@ class BoilingDataset(Dataset):
 
     def _runtime_params(self, key):
         with h5py.File(self._filenames[0], 'r') as f:
-            return f['real runtime parameters'][:]
+            return f[key][:]
 
     def _load_params(self):
         with h5py.File(self._filenames[0], 'r') as f:
@@ -95,16 +96,17 @@ class BoilingDataset(Dataset):
             frames.append(var_dict)
         return frames
 
+def unblock_dataset(write_dir, read_dir):
+    b = BoilingDataset(read_dir)
+    dir_name = read_dir[read_dir.find('Twall-'):]
+    b.to_hdf5(f'{target}/{dir_name}.hdf5')
+
 if __name__ == '__main__':
-    target = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/WallSuperheat-FC72-2D_HDF5/')
-    base = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/WallSuperheat-FC72-2D/')
+    target = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D_HDF5/')
+    base = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D/')
     subdirs = glob.glob(f'{base}/*')
     print(subdirs)
-
-    for subdir in subdirs:
-        print(subdir)
-        b = BoilingDataset(subdir)
-        dir_name = subdir[subdir.find('Twall-'):]
-        b.to_hdf5(f'{target}/{dir_name}.hdf5')
+    
+    output = Parallel(n_jobs=len(subdirs))(delayed(unblock_dataset)(target, subdir) for subdir in subdirs)
 
     print('done!')

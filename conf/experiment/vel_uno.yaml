@@ -7,7 +7,7 @@ train:
   time_window: 3
 
 model:
-  model_name: fno
+  model_name: uno
 
 optimizer:
   initial_lr: 1e-3

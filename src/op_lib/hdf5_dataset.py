@@ -5,6 +5,11 @@ import random
 from torchvision.transforms import Resize
 import torchvision.transforms.functional as TF
 
+# The early timesteps of a simulation may be "unsteady"
+# We say that the simulation enters a steady state around
+# timestep 30.
+STEADY_TIME = 30
+
 class HDF5Dataset(Dataset):
     def __init__(self, filename, transform=False, time_window=1):
         super().__init__()
@@ -12,11 +17,16 @@ class HDF5Dataset(Dataset):
         self.time_window = time_window
         self._data = {}
         with h5py.File(filename, 'r') as f:
-            self._data['temp'] = torch.from_numpy(f['temp'][..., 30:])
-            self._data['velx'] = torch.from_numpy(f['velx'][..., 30:])
-            self._data['vely'] = torch.from_numpy(f['vely'][..., 30:])
-            self._data['dfun'] = torch.from_numpy(f['dfun'][..., 30:])
+            print(f.keys())
+            self._data['temp'] = torch.from_numpy(f['temperature'][..., STEADY_TIME:])
+            self._data['velx'] = torch.from_numpy(f['velx'][..., STEADY_TIME:])
+            self._data['vely'] = torch.from_numpy(f['vely'][..., STEADY_TIME:])
+            self._data['dfun'] = torch.from_numpy(f['dfun'][..., STEADY_TIME:])
+
         self.transform = transform
+
+    def get_dfun(self):
+        return self._data['dfun'][..., self.time_window:]
 
     def __len__(self):
         # len is the number of timesteps. Each prediction
@@ -67,9 +77,8 @@ class VelDataset(HDF5Dataset):
     def _get_stack(self, timestep):
         return torch.stack([
             self._data['temp'][..., timestep],
-            self._data['velx'][..., timestep],
-            self._data['vely'][..., timestep],
-            (self._data['dfun'][..., timestep] >= 0).float() / 3,
+            self._data['velx'][..., timestep] / 20,
+            self._data['vely'][..., timestep] / 20,
         ], dim=0)
 
     def __getitem__(self, timestep):
@@ -77,7 +86,6 @@ class VelDataset(HDF5Dataset):
         input = torch.cat([
             input,
             self._data['temp'][..., timestep + self.time_window].unsqueeze(0),
-            (self._data['dfun'][..., timestep + self.time_window] >= 0).float().unsqueeze(0) / 3
         ], dim=0)
         label = torch.stack([
             self._data['velx'][..., timestep + self.time_window],
@@ -106,9 +114,6 @@ class TempInputDataset(HDF5Dataset):
             self._data['vely'][..., timestep] / 20,
         ], dim=0)
 
-    def get_dfun(self):
-        return self._data['dfun'][..., self.time_window:]
-
     def __getitem__(self, timestep):
         input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window)], dim=0)
         input = torch.cat([
@@ -117,7 +122,6 @@ class TempInputDataset(HDF5Dataset):
             self._data['vely'][..., timestep + self.time_window].unsqueeze(0) / 20,
         ], dim=0)
         label = self._data['temp'][..., timestep + self.time_window].unsqueeze(0)
-        dfun = self._data['dfun'][..., timestep + self.time_window].unsqueeze(0)
         return self._transform(input, label)
 
     def write_temp(self, temp, timestep):
@@ -129,24 +133,18 @@ class TempInputDataset(HDF5Dataset):
 class TempVelDataset(HDF5Dataset):
     def __init__(self, filename, transform=False, time_window=1):
         super().__init__(filename, transform, time_window)
-        self.in_channels = 4 * self.time_window + 1
+        self.in_channels = 3 * self.time_window
         self.out_channels = 3
 
     def _get_stack(self, timestep):
         return torch.stack([
             self._data['temp'][..., timestep],
-            self._data['velx'][..., timestep],
-            self._data['vely'][..., timestep],
-            (self._data['dfun'][..., timestep] >= 0).float()
+            self._data['velx'][..., timestep] / 20,
+            self._data['vely'][..., timestep] / 20,
         ], dim=0)
     
     def __getitem__(self, timestep):
         input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window)], dim=0)
-        input = torch.cat([
-            input,
-            (self._data['dfun'][..., timestep + self.time_window] >= 0).float().unsqueeze(0)
-        ], dim=0)
-
         label = torch.stack([
             self._data['temp'][..., timestep + self.time_window],
             self._data['velx'][..., timestep + self.time_window],
@@ -154,3 +152,15 @@ class TempVelDataset(HDF5Dataset):
         ], dim=0)
 
         return self._transform(input, label)
+
+    def write_velx(self, velx, timestep):
+        self._data['velx'][..., timestep + self.time_window] = velx
+
+    def write_vely(self, vely, timestep):
+        self._data['vely'][..., timestep + self.time_window] = vely
+
+    def write_temp(self, temp, timestep):
+        r""" Used for testing, can write predicted temp in to use
+        for future predictions
+        """
+        self._data['temp'][..., timestep + self.time_window] = temp

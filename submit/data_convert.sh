@@ -10,4 +10,4 @@ module load anaconda/2022.05
 conda activate mf-pytorch2
 module load gcc/11.2.0
 
-python src/boxkit_dataset.py
+python scripts/boxkit_dataset.py

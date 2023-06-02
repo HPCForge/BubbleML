@@ -6,9 +6,12 @@ hydra:
 data_base_dir: /data/homezvol2/afeeney/crsp/ai4ts/share/
 log_dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/train_log/
 
-test_only: False
+train: True
+test: True
+
+model_checkpoint:
 
 defaults:
   - _self_
   - dataset: PB_WallSuperHeat
-  - experiment: temp_fno
+  - experiment: vel_unet2d

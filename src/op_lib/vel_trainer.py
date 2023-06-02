@@ -12,6 +12,7 @@ import numpy as np
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
 from .metrics import compute_metrics
 from .losses import LpLoss
+from .plt_util import plt_temp, plt_vel
 
 class VelTrainer:
     def __init__(self,
@@ -48,11 +49,10 @@ class VelTrainer:
             input = TF.resize(input, size)
             label = TF.resize(label, size)
             pred = self.model(input)
-            #velx_loss = F.mse_loss(pred[:, 0], label[:, 0])
-            #vely_loss = F.mse_loss(pred[:, 1], label[:, 1])
-            velx_loss = self.loss(pred[:, 0], label[:, 0])
-            vely_loss = self.loss(pred[:, 1], label[:, 1])
-            loss = (velx_loss + vely_loss) / 2
+            temp_loss = self.loss(pred[:, 0], label[:, 0])
+            velx_loss = self.loss(pred[:, 1], label[:, 1])
+            vely_loss = self.loss(pred[:, 2], label[:, 2])
+            loss = (temp_loss + velx_loss + vely_loss) / 3
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -66,16 +66,19 @@ class VelTrainer:
             label = label.cuda().float()
             with torch.no_grad():
                 pred = self.model(input)
-                velx_loss = F.mse_loss(pred[:, 0], label[:, 0])
-                vely_loss = F.mse_loss(pred[:, 1], label[:, 1])
-                loss = (velx_loss + vely_loss) / 2
+                temp_loss = F.mse_loss(pred[:, 0], label[:, 0])
+                velx_loss = F.mse_loss(pred[:, 1], label[:, 1])
+                vely_loss = F.mse_loss(pred[:, 2], label[:, 2])
+                loss = (temp_loss + velx_loss + vely_loss) / 3
             print(f'val loss: {loss}')
             del input, label
 
     def test(self, dataset):
         self.model.eval()
+        temp_preds = []
         velx_preds = []
         vely_preds = []
+        temp_labels = []
         velx_labels = []
         vely_labels = []
         for timestep in range(len(dataset)):
@@ -85,17 +88,23 @@ class VelTrainer:
             print(input.size(), label.size())
             with torch.no_grad():
                 pred = self.model(input)
-                velx = pred[:, 0]
-                vely = pred[:, 1]
+                temp = pred[:, 0]
+                velx = pred[:, 1]
+                vely = pred[:, 2]
+                dataset.write_temp(temp, timestep)
                 dataset.write_velx(velx, timestep)
                 dataset.write_vely(vely, timestep)
+                temp_preds.append(temp.detach().cpu())
                 velx_preds.append(velx.detach().cpu())
                 vely_preds.append(vely.detach().cpu())
-                velx_labels.append(label[:, 0].detach().cpu())
-                vely_labels.append(label[:, 1].detach().cpu())
+                temp_labels.append(label[:, 0].detach().cpu())
+                velx_labels.append(label[:, 1].detach().cpu())
+                vely_labels.append(label[:, 2].detach().cpu())
 
+        temp_preds = torch.cat(temp_preds, dim=0)
         velx_preds = torch.cat(velx_preds, dim=0)
         vely_preds = torch.cat(vely_preds, dim=0)
+        temp_labels = torch.cat(temp_labels, dim=0)
         velx_labels = torch.cat(velx_labels, dim=0)
         vely_labels = torch.cat(vely_labels, dim=0)
 
@@ -105,7 +114,7 @@ class VelTrainer:
         mag_labels = mag(velx_labels, vely_labels)
         
         def print_metrics(pred, label):
-            metrics = compute_metrics(pred, label)
+            metrics = compute_metrics(pred, label, dataset.get_dfun().permute((2,0,1)))
             print(metrics)
 
         print('velx metrics:')
@@ -115,34 +124,9 @@ class VelTrainer:
         print('mag metrics:')
         print_metrics(mag_preds, mag_labels)
         
-        gt = mag_labels.max()
-        for i in range(len(velx_preds)):
-            i_str = str(i).zfill(3)
-
-            def plt_temp_arr(f, ax, arr, mm, title):
-                cm_object = ax.imshow(arr, vmin=0, vmax=mm, cmap='viridis')
-                ax.title.set_text(title)
-                ax.axis('off')
-                return cm_object
-
-            f, axarr = plt.subplots(2, 2, layout="constrained")
-            pred_mag = mag_preds[i]
-            label_mag = mag_labels[i] 
-
-            cm_object = plt_temp_arr(f, axarr[0, 0], np.flipud(label_mag), gt, 'Ground Truth')
-            plt_temp_arr(f, axarr[0, 1], np.flipud(pred_mag), gt, 'ML Model')
-            f.colorbar(cm_object, ax=axarr[0, 1], fraction=0.05)
-
-            cm_object = plt_temp_arr(f, axarr[1, 0], np.flipud(np.abs(label_mag - pred_mag)), 1, 'Absolute Error')
-            f.colorbar(cm_object, ax=axarr[1, 0], fraction=0.05)
-
-            vx_pred, vx_label = velx_preds[i], velx_labels[i]
-            vy_pred, vy_label = vely_preds[i], vely_labels[i]
-            xd = (vx_pred - vx_label) ** 2
-            yd = (vy_pred - vy_label) ** 2
-            n = np.sqrt(xd + yd)
-            cm_object = plt_temp_arr(f, axarr[1, 1], np.flipud(n), 1, 'L2 Error')
-            f.colorbar(cm_object, ax=axarr[1, 1], fraction=0.05)
-
-            plt.savefig(f'test_im/vel/{i_str}.png', dpi=500)
-            plt.close()
+        model_name = self.model.__class__.__name__
+        plt_temp(temp_preds, temp_labels, model_name)
+        max_mag = mag_labels.max()
+        #plt_vel(velx_preds, velx_labels, model_name, max_mag)
+        #plt_vel(vely_preds, vely_labels, model_name, max_mag)
+        plt_vel(mag_preds, mag_labels, max_mag, model_name)

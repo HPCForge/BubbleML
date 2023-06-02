@@ -6,6 +6,7 @@ take the same approach.
 import torch
 import torch.nn.functional as F
 from dataclasses import dataclass
+import math
 import numpy as np
 import numba as nb
 
@@ -19,6 +20,9 @@ class Metrics:
     max_error: float
     boundary_rmse: float
     interface_rmse: float
+    fourier_low: float
+    fourier_mid: float
+    fourier_high: float
 
     def __str__(self):
         return f"""
@@ -28,17 +32,30 @@ class Metrics:
             Max Error: {self.max_error}
             Boundary RMSE: {self.boundary_rmse}
             Interface RMSE: {self.interface_rmse}
+            Fourier
+                - Low: {self.fourier_low}
+                - Mid: {self.fourier_mid}
+                - High: {self.fourier_high}
         """
 
 def compute_metrics(pred, label, dfun):
+    low, mid, high = fourier_error(pred, label, 8, 8)
     return Metrics(
         mae=mae(pred, label),
         rmse=rmse(pred, label),
         relative_error=relative_error(pred, label),
         max_error=max_error(pred, label),
         boundary_rmse=boundary_rmse(pred, label),
-        interface_rmse=interface_rmse(pred, label, dfun)
+        interface_rmse=interface_rmse(pred, label, dfun),
+        fourier_low=low,
+        fourier_mid=mid,
+        fourier_high=high
     )
+
+def write_metrics(pred, label, iter, stage, writer):
+    writer.add_scalar(f'{stage}/MAE', mae(pred, label), iter)
+    writer.add_scalar(f'{stage}/RMSE', rmse(pred, label), iter)
+    writer.add_scalar(f'{stage}/MaxERror', max_error(pred, label), iter)
 
 def mae(pred, label):
     return F.l1_loss(pred, label)
@@ -103,3 +120,32 @@ def get_interface_mask(dgrid):
                    (j > 0 and dgrid[i][j] * dgrid[i,   j-1] <= 0))
             interface[i][j] = adj
     return interface
+
+def fourier_error(pred, target, Lx, Ly):
+    r""" This function is taken and modified from PDEBench
+    https://github.com/pdebench/PDEBench/blob/main/pdebench/models/metrics.py
+    """
+    ILOW = 4
+    IHIGH = 12
+
+    assert pred.dim() == 3
+    assert pred.size() == target.size()
+    pred_F = torch.fft.fftn(pred, dim=[1, 2])
+    target_F = torch.fft.fftn(target, dim=[1, 2])
+    idxs = target.size()
+    nb = target.size(0)
+    nx, ny = idxs[1:3]
+    print(nx, ny)
+    _err_F = torch.abs(pred_F - target_F) ** 2
+    err_F = torch.zeros((nb, min(nx // 2, ny // 2)))
+    for i in range(nx // 2):
+        for j in range(ny // 2):
+            it = math.floor(math.sqrt(i ** 2 + j ** 2))
+            if it > min(nx // 2, ny // 2) - 1:
+                continue
+            err_F[:, it] += _err_F[:, i, j]
+    _err_F = torch.sqrt(torch.mean(err_F, axis=0)) / (nx * ny) * Lx * Ly
+    low_err = torch.mean(_err_F[:ILOW])
+    mid_err = torch.mean(_err_F[ILOW:IHIGH])
+    high_err = torch.mean(_err_F[IHIGH:])
+    return low_err, mid_err, high_err

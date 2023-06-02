@@ -13,16 +13,20 @@ import numpy as np
 from neuralop.models import FNO, UNO
 from pathlib import Path
 import os
+import time
 
-from op_lib.hdf5_dataset import HDF5Dataset, TempDataset, TempInputDataset, VelDataset
+from op_lib.hdf5_dataset import (
+        TempInputDataset,
+        VelDataset,
+        TempVelDataset
+)
 from op_lib.unet import UNet2d 
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 
 torch_dataset_map = {
-    'temp_dataset': TempDataset,
     'temp_input_dataset': TempInputDataset,
-    'vel_dataset': VelDataset
+    'vel_dataset': TempVelDataset
 }
 
 model_map = {
@@ -31,7 +35,6 @@ model_map = {
 }
 
 trainer_map = {
-    'temp_dataset': TempTrainer,
     'temp_input_dataset': TempTrainer,
     'vel_dataset': VelTrainer
 }
@@ -58,29 +61,14 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                 pin_memory=True)
     return train_dataloader, val_dataloader
 
-@hydra.main(version_base=None, config_path='../conf', config_name='default')
-def train_app(cfg):
-    print(OmegaConf.to_yaml(cfg))
-    print(cfg.dataset.train_paths)
-
-    exp = cfg.experiment
-    writer = SummaryWriter(log_dir=cfg.log_dir)
-
-    train_dataset, val_dataset = build_datasets(cfg)
-    train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
-    print('train size: ', len(train_dataloader))
-
-    model_name = exp.model.model_name.lower()
-    in_channels = train_dataset.datasets[0].in_channels
-    out_channels = train_dataset.datasets[0].out_channels
-
+def get_model(model_name, in_channels, out_channels):
     assert model_name in ('unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
     if model_name == 'unet2d': 
         model = UNet2d(in_channels=in_channels,
                        out_channels=out_channels,
                        init_features=64)
     elif model_name == 'fno':
-        model = FNO(n_modes=(16, 16),
+        model = FNO(n_modes=(32, 32),
                     hidden_channels=64,
                     in_channels=in_channels,
                     out_channels=out_channels,
@@ -97,6 +85,34 @@ def train_app(cfg):
                     n_layers=5,
                     domain_padding=0.2)
     model = model.cuda().float()
+    return model
+
+@hydra.main(version_base=None, config_path='../conf', config_name='default')
+def train_app(cfg):
+    print(OmegaConf.to_yaml(cfg))
+    print(cfg.dataset.train_paths)
+    assert cfg.test or cfg.train
+
+    job_id = os.getenv('SLURM_JOB_ID')
+    if job_id:
+        log_dir = f'{cfg.log_dir}/{job_id}'
+    else:
+        log_dir = f'{cfg.log_dir}'
+    
+    writer = SummaryWriter(log_dir=log_dir)
+
+    train_dataset, val_dataset = build_datasets(cfg)
+    train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
+    print('train size: ', len(train_dataloader))
+
+    exp = cfg.experiment
+    model_name = exp.model.model_name.lower()
+    in_channels = train_dataset.datasets[0].in_channels
+    out_channels = train_dataset.datasets[0].out_channels
+
+    model = get_model(model_name, in_channels, out_channels)
+    if cfg.model_checkpoint:
+        model.load_state_dict(torch.load(cfg.model_checkpoint))
     print(model)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=exp.optimizer.initial_lr)
@@ -114,16 +130,18 @@ def train_app(cfg):
                            exp)
     print(trainer)
 
-    if not cfg.test_only:
+    if cfg.train and not cfg.model_checkpoint:
         trainer.train(exp.train.max_epochs)
-    trainer.test(val_dataset.datasets[0])
+        timestamp = int(time.time())
+        ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
+        ckpt_root = Path.home() / f'crsp/ai4ts/afeeney/thermal_models/{cfg.dataset.name}'
+        Path(ckpt_root).mkdir(parents=True, exist_ok=True)
+        ckpt_path = f'{ckpt_root}/{ckpt_file}'
+        print(f'saving model to {ckpt_path}')
+        torch.save(model.state_dict(), f'{ckpt_path}')
 
-    ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}.pt'
-    ckpt_root = Path.home() / f'crsp/ai4ts/afeeney/thermal_models/{cfg.dataset.name}'
-    Path(ckpt_root).mkdir(parents=True, exist_ok=True)
-    ckpt_path = f'{ckpt_root}/{ckpt_file}'
-    print(f'saving model to {ckpt_path}')
-    torch.save(model, f'{ckpt_path}')
+    if cfg.test:
+        trainer.test(val_dataset.datasets[0])
 
 if __name__ == '__main__':
     train_app()

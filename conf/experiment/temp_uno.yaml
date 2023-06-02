@@ -1,7 +1,7 @@
 torch_dataset_name: temp_input_dataset 
 
 train:
-  max_epochs: 50 
+  max_epochs: 500 
   batch_size: 8
   shuffle_data: True
   time_window: 3
