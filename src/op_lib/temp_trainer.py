@@ -13,6 +13,7 @@ from .hdf5_dataset import HDF5Dataset, TempVelDataset
 from .metrics import compute_metrics, write_metrics
 from .losses import LpLoss
 from .plt_util import plt_temp
+from .heatflux import heatflux
 
 from torch.cuda import nvtx 
 
@@ -105,7 +106,12 @@ class TempTrainer:
                 labels.append(label[:, 0].detach().cpu())
         temps = torch.cat(temps, dim=0)
         labels = torch.cat(labels, dim=0)
-        metrics = compute_metrics(temps, labels, dataset.get_dfun().permute((2, 0, 1)))
+
+        dfun = dataset.get_dfun().permute((2, 0, 1))
+        metrics = compute_metrics(temps, labels, dfun)
         print(metrics)
-        
+
+        print(heatflux(temps, dfun, dataset.get_dy()))
+        print(heatflux(labels, dfun, dataset.get_dy()))
+    
         plt_temp(temps, labels, self.model.__class__.__name__)

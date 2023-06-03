@@ -4,7 +4,7 @@ train:
   max_epochs: 500 
   batch_size: 8
   shuffle_data: True
-  time_window: 3
+  time_window: 6
 
 model:
   model_name: unet2d

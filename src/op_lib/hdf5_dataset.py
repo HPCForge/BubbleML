@@ -22,8 +22,14 @@ class HDF5Dataset(Dataset):
             self._data['velx'] = torch.from_numpy(f['velx'][..., STEADY_TIME:])
             self._data['vely'] = torch.from_numpy(f['vely'][..., STEADY_TIME:])
             self._data['dfun'] = torch.from_numpy(f['dfun'][..., STEADY_TIME:])
+            self._data['y'] = torch.from_numpy(f['y'][..., STEADY_TIME:])
 
         self.transform = transform
+    
+    def get_dy(self):
+        r""" dy is the grid spacing in the y direction.
+        """
+        return abs(self._data['y'][1, 0, 0] - self._data['y'][0, 0, 0])
 
     def get_dfun(self):
         return self._data['dfun'][..., self.time_window:]
@@ -133,22 +139,42 @@ class TempInputDataset(HDF5Dataset):
 class TempVelDataset(HDF5Dataset):
     def __init__(self, filename, transform=False, time_window=1):
         super().__init__(filename, transform, time_window)
-        self.in_channels = 3 * self.time_window
+        self.in_channels = 3 * self.time_window + 2
         self.out_channels = 3
 
     def _get_stack(self, timestep):
+        cur_velx = self._data['velx'][..., timestep].detach().clone()
+        cur_vely = self._data['velx'][..., timestep].detach().clone()
+        cur_dfun = self._data['dfun'][..., timestep]
+        # zero out the liquid velocities
+        cur_velx[cur_dfun < 0] = 0
+        cur_vely[cur_dfun < 0] = 0
         return torch.stack([
             self._data['temp'][..., timestep],
-            self._data['velx'][..., timestep] / 20,
-            self._data['vely'][..., timestep] / 20,
+            cur_velx / 20,
+            cur_vely / 20,
         ], dim=0)
     
     def __getitem__(self, timestep):
         input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window)], dim=0)
+
+        cur_velx = self._data['velx'][..., timestep + self.time_window].detach().clone()
+        cur_vely = self._data['velx'][..., timestep + self.time_window].detach().clone()
+        cur_dfun = self._data['dfun'][..., timestep + self.time_window]
+        # zero out the liquid velocities
+        cur_velx[cur_dfun < 0] = 0
+        cur_vely[cur_dfun < 0] = 0
+
+        input = torch.cat([
+            input,
+            cur_velx.unsqueeze(0) / 20,
+            cur_vely.unsqueeze(0) / 20
+        ])
+
         label = torch.stack([
             self._data['temp'][..., timestep + self.time_window],
-            self._data['velx'][..., timestep + self.time_window],
-            self._data['vely'][..., timestep + self.time_window]
+            self._data['velx'][..., timestep + self.time_window] / 20,
+            self._data['vely'][..., timestep + self.time_window] / 20
         ], dim=0)
 
         return self._transform(input, label)

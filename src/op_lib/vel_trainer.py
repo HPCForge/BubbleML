@@ -44,10 +44,10 @@ class VelTrainer:
         for iter, (input, label) in enumerate(self.train_dataloader):
             input = input.cuda().float()
             label = label.cuda().float()
-            sizes = torch.tensor(range(64, input.size(-1) + 1, 64))
-            size = sizes[torch.randperm(sizes.size(0))[0]].item()
-            input = TF.resize(input, size)
-            label = TF.resize(label, size)
+            #sizes = torch.tensor(range(64, input.size(-1) + 1, 64))
+            #size = sizes[torch.randperm(sizes.size(0))[0]].item()
+            #input = TF.resize(input, size)
+            #label = TF.resize(label, size)
             pred = self.model(input)
             temp_loss = self.loss(pred[:, 0], label[:, 0])
             velx_loss = self.loss(pred[:, 1], label[:, 1])
@@ -89,11 +89,11 @@ class VelTrainer:
             with torch.no_grad():
                 pred = self.model(input)
                 temp = pred[:, 0]
-                velx = pred[:, 1]
-                vely = pred[:, 2]
+                velx = F.hardtanh(pred[:, 1], min_val=-1, max_val=1)
+                vely = F.hardtanh(pred[:, 2], min_val=-1, max_val=1)
                 dataset.write_temp(temp, timestep)
-                dataset.write_velx(velx, timestep)
-                dataset.write_vely(vely, timestep)
+                #dataset.write_velx(velx * 20, timestep)
+                #dataset.write_vely(vely * 20, timestep)
                 temp_preds.append(temp.detach().cpu())
                 velx_preds.append(velx.detach().cpu())
                 vely_preds.append(vely.detach().cpu())
@@ -117,6 +117,8 @@ class VelTrainer:
             metrics = compute_metrics(pred, label, dataset.get_dfun().permute((2,0,1)))
             print(metrics)
 
+        print('temp metrics:')
+        print_metrics(temp_preds, temp_labels)
         print('velx metrics:')
         print_metrics(velx_preds, velx_labels)
         print('vely metrics:')
@@ -127,6 +129,4 @@ class VelTrainer:
         model_name = self.model.__class__.__name__
         plt_temp(temp_preds, temp_labels, model_name)
         max_mag = mag_labels.max()
-        #plt_vel(velx_preds, velx_labels, model_name, max_mag)
-        #plt_vel(vely_preds, vely_labels, model_name, max_mag)
         plt_vel(mag_preds, mag_labels, max_mag, model_name)
