@@ -43,7 +43,7 @@ def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
     time_window = cfg.experiment.train.time_window
     train_dataset = ConcatDataset([
-        DatasetClass(p, transform=True, time_window=time_window) for p in cfg.dataset.train_paths])
+        DatasetClass(p, transform=cfg.dataset.transform, time_window=time_window) for p in cfg.dataset.train_paths])
     val_dataset = ConcatDataset([
         DatasetClass(p, time_window=time_window) for p in cfg.dataset.val_paths])
     return train_dataset, val_dataset
@@ -104,6 +104,10 @@ def train_app(cfg):
     train_dataset, val_dataset = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
+    tail = cfg.dataset.val_paths[0].split('-')[-1]
+    print(tail, tail[:-5])
+    val_variable = int(tail[:-5])
+    print('T_wall of val sim: ', val_variable)
 
     exp = cfg.experiment
     model_name = exp.model.model_name.lower()
@@ -126,6 +130,7 @@ def train_app(cfg):
                            val_dataloader,
                            optimizer,
                            lr_scheduler,
+                           val_variable,
                            writer,
                            exp)
     print(trainer)

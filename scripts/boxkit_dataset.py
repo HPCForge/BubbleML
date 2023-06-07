@@ -13,13 +13,16 @@ class BoilingDataset(Dataset):
         super().__init__()
         filenames = sorted(glob.glob(directory + '/*'))
         self._filenames = [f for f in filenames if 'plt_cnt' in f]
+        with h5py.File(self._filenames[0]) as f:
+            print(f.keys())
         if len(self._filenames) > 0:
-            self._data, self._params = self._load_data()
+            self._data = self._load_data()
             self._load_dims()
 
     def to_hdf5(self, filename):
         if len(self._filenames) == 0:
             return
+        print(filename)
         with h5py.File(filename, 'w') as f:
             f.create_dataset('temperature', data=self._data['temp'])
             f.create_dataset('velx', data=self._data['velx'])
@@ -28,14 +31,13 @@ class BoilingDataset(Dataset):
             f.create_dataset('pressure', data=self._data['pres'])
             f.create_dataset('x', data=self._data['x'])
             f.create_dataset('y', data=self._data['y'])
-            f.create_dataset('real-runtime-params', data=self._runtime_params('real runtime paramters'))
-            f.create_dataset('int-runtime-params', data=self._runtime_params('integer runtime paramters'))
+            #f.create_dataset('real-runtime-params', data=f['real runtime parameters'][:])
+            #f.create_dataset('int-runtime-params', data=f['integer runtime parameters'][:])
 
     def _load_data(self):
         frame_dicts = self._load_files()
         var_dict = self._stack_frame_dicts(frame_dicts)
-        params = self._load_params()
-        return var_dict, params
+        return var_dict
 
     def _stack_frame_dicts(self, frame_dicts):
         var_list = frame_dicts[0].keys()
@@ -47,14 +49,9 @@ class BoilingDataset(Dataset):
             var_dict[var] = torch.stack(var_dict[var], -1)
         return var_dict
 
-    def _runtime_params(self, key):
+    def _runtime_params(self, f, key):
         with h5py.File(self._filenames[0], 'r') as f:
             return f[key][:]
-
-    def _load_params(self):
-        with h5py.File(self._filenames[0], 'r') as f:
-            rrp = dict([(key.decode('utf-8').strip(), val) for (key, val) in f['real runtime parameters']])
-        return rrp
 
     def _load_dims(self):
         frame0 = boxkit.read_dataset(self._filenames[0], source='flash')
@@ -76,14 +73,14 @@ class BoilingDataset(Dataset):
 
             var_dict = {}
             for key in frame.varlist:
-                var_dict[key] = np.empty((nxb, nyb))
+                var_dict[key] = np.empty((nyb, nxb))
                 for block in blocks:
                     a, b, _ = block.get_relative_loc([frame.xmin, frame.ymin, 0])
                     r, c = b * y_bs, a * x_bs 
                     var_dict[key][r:r+y_bs, c:c+x_bs] = block[key]
 
-            var_dict['x'] = np.empty((nxb, nyb))
-            var_dict['y'] = np.empty((nxb, nyb))
+            var_dict['x'] = np.empty((nyb, nxb))
+            var_dict['y'] = np.empty((nyb, nxb))
             block_idx = 0
             for block in blocks:
                 x, y = np.meshgrid(block.xrange('center'),
@@ -98,13 +95,13 @@ class BoilingDataset(Dataset):
 
 def unblock_dataset(write_dir, read_dir):
     b = BoilingDataset(read_dir)
-    dir_name = read_dir[read_dir.find('Twall-'):]
+    dir_name = read_dir[read_dir.find('gravX-'):]
     b.to_hdf5(f'{target}/{dir_name}.hdf5')
 
 if __name__ == '__main__':
-    target = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D_HDF5/')
-    base = str(Path.home() / 'crsp/ai4ts/share/PB_simulation/SubCooled-FC72-2D/')
-    subdirs = glob.glob(f'{base}/*')
+    target = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/Gravity-FC72-2D_HDF5/')
+    base = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/Gravity-FC72-2D/')
+    subdirs = [f for f in glob.glob(f'{base}/*') if 'gravX-' in f]
     print(subdirs)
     
     output = Parallel(n_jobs=len(subdirs))(delayed(unblock_dataset)(target, subdir) for subdir in subdirs)

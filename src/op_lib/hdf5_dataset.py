@@ -22,14 +22,23 @@ class HDF5Dataset(Dataset):
             self._data['velx'] = torch.from_numpy(f['velx'][..., STEADY_TIME:])
             self._data['vely'] = torch.from_numpy(f['vely'][..., STEADY_TIME:])
             self._data['dfun'] = torch.from_numpy(f['dfun'][..., STEADY_TIME:])
+            self._data['x'] = torch.from_numpy(f['x'][..., STEADY_TIME:])
             self._data['y'] = torch.from_numpy(f['y'][..., STEADY_TIME:])
+            print(self._data['temp'].size())
+            print(self._data['velx'].size())
+            print(self._data['x'][0].min(), self._data['x'][0].max())
+            print(self._data['y'][0, 0, 0], self._data['y'][-1, 0, 0])
 
         self.transform = transform
+
+    def get_x(self):
+        return self._data['x'][..., self.time_window:]
     
     def get_dy(self):
         r""" dy is the grid spacing in the y direction.
         """
-        return abs(self._data['y'][1, 0, 0] - self._data['y'][0, 0, 0])
+        #return abs(self._data['y'][1, 0, 0] - self._data['y'][0, 0, 0])
+        return self._data['y'][0, 0, 0]
 
     def get_dfun(self):
         return self._data['dfun'][..., self.time_window:]

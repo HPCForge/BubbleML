@@ -12,7 +12,7 @@ import numpy as np
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
 from .metrics import compute_metrics, write_metrics
 from .losses import LpLoss
-from .plt_util import plt_temp
+from .plt_util import plt_temp, plt_iter_mae
 from .heatflux import heatflux
 
 from torch.cuda import nvtx 
@@ -30,6 +30,7 @@ class TempTrainer:
                  val_dataloader,
                  optimizer,
                  lr_scheduler,
+                 val_variable,
                  writer,
                  cfg):
         self.model = model
@@ -37,6 +38,7 @@ class TempTrainer:
         self.val_dataloader = val_dataloader
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
+        self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg
         self.loss = LpLoss(d=2)
@@ -110,8 +112,10 @@ class TempTrainer:
         dfun = dataset.get_dfun().permute((2, 0, 1))
         metrics = compute_metrics(temps, labels, dfun)
         print(metrics)
-
-        print(heatflux(temps, dfun, dataset.get_dy()))
-        print(heatflux(labels, dfun, dataset.get_dy()))
-    
+        
+        xgrid = dataset.get_x().permute((2, 0, 1))
+        print(heatflux(temps, dfun, self.val_variable, xgrid, dataset.get_dy()))
+        print(heatflux(labels, dfun, self.val_variable, xgrid, dataset.get_dy()))
+        
+        plt_iter_mae(temps, labels)
         plt_temp(temps, labels, self.model.__class__.__name__)
