@@ -1,9 +1,13 @@
 name: fb_inlet_vel
+transform: False
 train_paths:
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-0.5.hdf5
   - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-1.0.hdf5
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-1.5.hdf5
   - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-2.0.hdf5
-    #- ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-2.5.hdf5
-    #- ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-4.0.hdf5
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-2.5.hdf5
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-3.5.hdf5
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-4.0.hdf5
 val_paths:
         #- ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-3.0.hdf5
-  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-4.0.hdf5
+  - ${data_base_dir}/FlowBoilingStudies/VelScale-FC72-2D_HDF5/inletVelScale-3.5.hdf5

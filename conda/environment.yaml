@@ -1,0 +1,11 @@
+name: bubbleml-sciml
+channels:
+  - numba
+dependencies:
+  - numpy
+  - h5py
+  - numba
+  - pip
+  - pip:
+    - hydra-core
+    - neuraloperator

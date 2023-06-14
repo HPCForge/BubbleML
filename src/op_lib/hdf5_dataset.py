@@ -17,13 +17,13 @@ class HDF5Dataset(Dataset):
         self.time_window = time_window
         self._data = {}
         with h5py.File(filename, 'r') as f:
-            print(f.keys())
-            self._data['temp'] = torch.from_numpy(f['temperature'][..., STEADY_TIME:])
-            self._data['velx'] = torch.from_numpy(f['velx'][..., STEADY_TIME:])
-            self._data['vely'] = torch.from_numpy(f['vely'][..., STEADY_TIME:])
+            self._data['temp'] = torch.nan_to_num(torch.from_numpy(f['temperature'][..., STEADY_TIME:]))
+            self._data['velx'] = torch.nan_to_num(torch.from_numpy(f['velx'][..., STEADY_TIME:]))
+            self._data['vely'] = torch.nan_to_num(torch.from_numpy(f['vely'][..., STEADY_TIME:]))
             self._data['dfun'] = torch.from_numpy(f['dfun'][..., STEADY_TIME:])
             self._data['x'] = torch.from_numpy(f['x'][..., STEADY_TIME:])
             self._data['y'] = torch.from_numpy(f['y'][..., STEADY_TIME:])
+
             print(self._data['temp'].size())
             print(self._data['velx'].size())
             print(self._data['x'][0].min(), self._data['x'][0].max())

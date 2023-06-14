@@ -13,6 +13,5 @@ conda activate mf-pytorch2
 module load gcc/11.2.0
 
 python src/train.py \
-	dataset=FB_Gravity \
-	experiment=temp_unet2d \
-	experiment.torch_dataset_name=temp_input_dataset \
+	dataset=FB_InletVel \
+	experiment=temp_uno \

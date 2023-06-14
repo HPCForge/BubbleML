@@ -24,6 +24,7 @@ from op_lib.unet import UNet2d
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 
+
 torch_dataset_map = {
     'temp_input_dataset': TempInputDataset,
     'vel_dataset': TempVelDataset
@@ -79,11 +80,10 @@ def get_model(model_name, in_channels, out_channels):
                     hidden_channels=64,
                     projection_channels=64,
                     uno_out_channels=[32,64,64,64,32],
-                    uno_n_modes=[[32,32],[16,16],[16,16],[16,16],[32,32]],
-                    uno_scalings=[[1.0,1.0],[0.5,0.5],[1,1],[2,2],[1,1]],
+                    uno_n_modes=[[32,32],[32,32],[32,32],[32,32],[32,32]],
+                    uno_scalings=[[1.0,1.0],[1,1],[1,1],[1,1],[1,1]],
                     horizontal_skips_map=None,
-                    n_layers=5,
-                    domain_padding=0.2)
+                    n_layers=5)
     model = model.cuda().float()
     return model
 
@@ -106,7 +106,7 @@ def train_app(cfg):
     print('train size: ', len(train_dataloader))
     tail = cfg.dataset.val_paths[0].split('-')[-1]
     print(tail, tail[:-5])
-    val_variable = int(tail[:-5])
+    val_variable = 0#int(tail[:-5])
     print('T_wall of val sim: ', val_variable)
 
     exp = cfg.experiment

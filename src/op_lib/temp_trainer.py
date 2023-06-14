@@ -17,11 +17,10 @@ from .heatflux import heatflux
 
 from torch.cuda import nvtx 
 
-# random resizing code...
-#sizes = torch.tensor(range(128, input.size(-1) + 1, 64))
-#size = sizes[torch.randperm(sizes.size(0))[0]].item()
-#input = TF.resize(input, size)
-#label = TF.resize(label, size)
+t_bulk_map = {
+    'wall_super_heat': 58,
+    'subcooled': 50
+}
 
 class TempTrainer:
     def __init__(self,
@@ -53,24 +52,20 @@ class TempTrainer:
     def train_step(self, epoch):
         self.model.train()
         for iter, (input, label) in enumerate(self.train_dataloader):
-            # move data to GPU
-
             input = input.cuda().float()
             label = label.cuda().float()
             
-            # throw data at model (on GPU)
             pred = self.model(input)
+            print(pred.size(), label.size())
             temp_loss = self.loss(pred, label)
             loss = temp_loss
             torch.cuda.synchronize()
 
-            # compute the update (on GPU)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             torch.cuda.synchronize()
             
-            # print out some metrics (on CPU)
             print(f'train loss: {loss}')
 
             global_iter = epoch * len(self.train_dataloader) + iter

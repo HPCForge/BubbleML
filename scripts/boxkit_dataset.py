@@ -31,8 +31,14 @@ class BoilingDataset(Dataset):
             f.create_dataset('pressure', data=self._data['pres'])
             f.create_dataset('x', data=self._data['x'])
             f.create_dataset('y', data=self._data['y'])
-            #f.create_dataset('real-runtime-params', data=f['real runtime parameters'][:])
-            #f.create_dataset('int-runtime-params', data=f['integer runtime parameters'][:])
+            
+            REAL_RUNTIME_PARAMS = 'real runtime parameters'
+            INT_RUNTIME_PARAMS = 'integer runtime parameters'
+
+            if REAL_RUNTIME_PARAMS in f.keys():
+                f.create_dataset('real-runtime-params', data=f[REAL_RUNTIME_PARAMS][:])
+            if INT_RUNTIME_PARAMS in f.keys():
+                f.create_dataset('int-runtime-params', data=f[INT_RUNTIME_PARAMS][:])
 
     def _load_data(self):
         frame_dicts = self._load_files()
@@ -95,13 +101,13 @@ class BoilingDataset(Dataset):
 
 def unblock_dataset(write_dir, read_dir):
     b = BoilingDataset(read_dir)
-    dir_name = read_dir[read_dir.find('gravX-'):]
+    dir_name = read_dir[read_dir.find('inletVelScale-'):]
     b.to_hdf5(f'{target}/{dir_name}.hdf5')
 
 if __name__ == '__main__':
-    target = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/Gravity-FC72-2D_HDF5/')
-    base = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/Gravity-FC72-2D/')
-    subdirs = [f for f in glob.glob(f'{base}/*') if 'gravX-' in f]
+    target = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/VelScale-FC72-2D_HDF5/')
+    base = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/VelScale-FC72-2D/')
+    subdirs = [f for f in glob.glob(f'{base}/*') if 'inletVelScale-' in f]
     print(subdirs)
     
     output = Parallel(n_jobs=len(subdirs))(delayed(unblock_dataset)(target, subdir) for subdir in subdirs)
