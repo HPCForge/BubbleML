@@ -9,3 +9,4 @@ dependencies:
   - pip:
     - hydra-core
     - neuraloperator
+    - opencv-python
