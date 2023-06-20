@@ -31,7 +31,8 @@ def write_flo(file_path, u, v):
 
 def make_dataset(sim_file, op_dir, train_valid_split):
     simul_data = h5py.File(sim_file, 'r')
-    num_timesteps = simul_data['dfun'][()].shape[2]
+    dist_fields = simul_data['dfun'][:]
+    num_timesteps = dist_fields.shape[2]
     train_length = int(train_valid_split * num_timesteps)
     train_save_dir = os.path.join(op_dir, 'train', sim_file.split('/')[-1][:-5])
     valid_save_dir = os.path.join(op_dir, 'valid', sim_file.split('/')[-1][:-5])
@@ -41,43 +42,29 @@ def make_dataset(sim_file, op_dir, train_valid_split):
     os.makedirs(os.path.join(valid_save_dir, 'flow'), exist_ok=True)
 
     for index in range(train_length):
-        dist_field = simul_data['dfun'][()][:,:,index]
-        u = simul_data['velx'][()][:,:,index]
-        v = simul_data['vely'][()][:,:,index]
+        dist_field = np.flipud(simul_data['dfun'][()][:,:,index])
+        u = np.flipud(simul_data['velx'][()][:,:,index])
+        v = -1*np.flipud(simul_data['vely'][()][:,:,index])
         u[dist_field < 0] = 0
         v[dist_field < 0] = 0
-        img_arr = np.zeros((dist_field.shape[0], dist_field.shape[1]), dtype=np.uint8)
-        for i in range(dist_field.shape[0]):
-            for j in range(dist_field.shape[1]):
-                if dist_field[i][j] < 0:
-                    img_arr[i][j] = 255
-                else:
-                    img_arr[i][j] = int((dist_field[i][j]/np.max(dist_field))*255)
-        img_arr = np.flipud(img_arr)
-        u = np.flipud(u)
-        v = -1 * np.flipud(v)
-        plt.imsave(os.path.join(train_save_dir, 'img', '{:04d}'.format(index) + '.png'), img_arr, cmap='gray')
+        dist_field[dist_field>0] *= (255/dist_field.max())
+        dist_field[dist_field<0] = 255
+        dist_field = dist_field.astype(np.uint8)
+        plt.imsave(os.path.join(train_save_dir, 'img', '{:04d}'.format(index) + '.png'), dist_field, cmap='gray')
         write_flo(os.path.join(train_save_dir, 'flow', '{:04d}'.format(index) + '.flo'), u, v)
         if index%10 == 0:
             print(f'{index} files done for {sim_file}')
 
     for index in range(train_length, num_timesteps):
-        dist_field = simul_data['dfun'][()][:,:,index]
-        u = simul_data['velx'][()][:,:,index]
-        v = simul_data['vely'][()][:,:,index]
+        dist_field = np.flipud(simul_data['dfun'][()][:,:,index])
+        u = np.flipud(simul_data['velx'][()][:,:,index])
+        v = -1*np.flipud(simul_data['vely'][()][:,:,index])
         u[dist_field < 0] = 0
         v[dist_field < 0] = 0
-        img_arr = np.zeros((dist_field.shape[0], dist_field.shape[1]), dtype=np.uint8)
-        for i in range(dist_field.shape[0]):
-            for j in range(dist_field.shape[1]):
-                if dist_field[i][j] < 0:
-                    img_arr[i][j] = 255
-                else:
-                    img_arr[i][j] = int((dist_field[i][j]/np.max(dist_field))*255)
-        img_arr = np.flipud(img_arr)
-        u = np.flipud(u)
-        v = -1 * np.flipud(v)
-        plt.imsave(os.path.join(valid_save_dir, 'img', '{:04d}'.format(index) + '.png'), img_arr, cmap='gray')
+        dist_field[dist_field>0] *= (255/dist_field.max())
+        dist_field[dist_field<0] = 255
+        dist_field = dist_field.astype(np.uint8)
+        plt.imsave(os.path.join(valid_save_dir, 'img', '{:04d}'.format(index) + '.png'), dist_field, cmap='gray')
         write_flo(os.path.join(valid_save_dir, 'flow', '{:04d}'.format(index) + '.flo'), u, v)
         if index%10 == 0:
             print(f'{index} files done for {sim_file}')
@@ -85,10 +72,13 @@ def make_dataset(sim_file, op_dir, train_valid_split):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--ip_dir', type=str, help='path to the directory of hdf5 simulation files of a particular boiling study. file extensions should be .hdf5')
-    parser.add_argument('--op_dir', type=str, default='Boiling', help='path to save the optical flow training set')
-    parser.add_argument('--train_valid_split', type=float, default=0.8, help='percentage of images to be kept for validation')
-    
+    parser.add_argument('--ip_dir', type=str, 
+                        help='path to the directory of hdf5 simulation files of a particular boiling study')
+    parser.add_argument('--op_dir', type=str, default='Boiling', 
+                        help='path to save the optical flow training set')
+    parser.add_argument('--train_valid_split', type=float, default=0.8, 
+                        help='percentage of images to be kept for validation')
+   
     args = parser.parse_args()
 
     sim_files = glob.glob(f'{args.ip_dir}/*.hdf5')
