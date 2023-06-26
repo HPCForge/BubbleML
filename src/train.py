@@ -96,6 +96,8 @@ def train_app(cfg):
     print(OmegaConf.to_yaml(cfg))
     print(cfg.dataset.train_paths)
     assert cfg.test or cfg.train
+    assert cfg.data_base_dir is not None
+    assert cfg.log_dir is not None
 
     job_id = os.getenv('SLURM_JOB_ID')
     if job_id:

@@ -39,9 +39,8 @@ conda create -n bubble-sciml -f conda/bubbleml-pytorch-2.0.1-cuda-11.7.yaml
 ## Running Sample Code
 
 The sample code uses Hydra to manage different configurations.
-For example, we treat each simulation group as a dataset: `conf/dataset/*.yaml`.
+For example, we treat each simulation type as a dataset: `conf/dataset/*.yaml`.
 Similarly, each model is treated as a separate experiment: `conf/experiment/*.yaml`.
-Running the main training script with different settings with run an experiment on a particular dataset.
 
 For example, training a temperature prediction UNet model on the subcooled boiling dataset is simple:
 
@@ -53,4 +52,22 @@ If you want to run a pretrained model, you can specify the `model_checkpoint` pa
 
 ~~~~
 python src/train.py dataset=PB_SubCooled experiment=temp_unet2d model_checkpoint=<path>
+~~~~
+
+The config file `conf/default.yaml` assumes that the datasets are extracted to the same location.
+**This location should be set by the user. By default, this setting is empty**.
+Setting the `data_base_dir`  can be done by explicity updating `conf/default.yaml` or
+specifying the dataset base directory when running the python scripts.) 
+
+For example, if you downloaded two datasets to 
+
+~~~~
+/your/path/to/BubbleML/saturated.hdf5`  
+/your/path/to/BubbleML/subcooled.hdf5`  
+~~~~
+
+then, to train a UNet model on the subcooled boiling dataset, just run
+
+~~~~
+python src/train.py data_base_dir=/your/path/to/BubbleML dataset=PB_SubCooled experiment=temp_unet
 ~~~~
