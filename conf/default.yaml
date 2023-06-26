@@ -2,8 +2,9 @@ hydra:
   run:
     dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/hydra/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
 
-# These must set by the user.
-data_base_dir: /data/homezvol2/afeeney/crsp/ai4ts/share/
+# These should be overriden by the user to point to the location
+# where the dataset was downloaded.
+data_base_dir: /data/homezvol2/afeeney/crsp/ai4ts/share/BubbleML
 log_dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/train_log/
 
 train: True
