@@ -43,17 +43,17 @@ def plt_temp(temps, labels, model_name):
 
         temp = temps[i].numpy()
         label = labels[i].numpy()
-        f, axarr = plt.subplots(2, 1, layout="constrained")
-        #cm_object = plt_temp_arr(f, axarr[0], np.flipud(label), 'Ground Truth')
-        cm_object = plt_temp_arr(f, axarr[0], np.flipud(temp), model_name)
+        f, axarr = plt.subplots(1, 3, layout="constrained")
+        cm_object = plt_temp_arr(f, axarr[0], np.flipud(label), 'Ground Truth')
+        cm_object = plt_temp_arr(f, axarr[1], np.flipud(temp), model_name)
         
         err = np.abs(temp - label)
-        cm_object = plt_temp_arr(f, axarr[1], np.flipud(err), 'Absolute Error')
+        cm_object = plt_temp_arr(f, axarr[2], np.flipud(err), 'Absolute Error')
         f.tight_layout()
         f.colorbar(cm_object,
                    ax=axarr.ravel().tolist(),
                    ticks=[0, 0.2, 0.6, 0.9],
-                   fraction=0.02,
+                   fraction=0.04,
                    pad=0.02)
 
         f.set_size_inches(w=6, h=3)

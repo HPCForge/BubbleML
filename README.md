@@ -1,6 +1,7 @@
 # BubbleML
 
-A multi-physics dataset of boiling processes.
+A multi-physics dataset of boiling processes.  
+This repository includes downloads, visualizations, and sample applications.
 
 ![SubCooled Temperature](video/subcooled.gif)
 
@@ -24,9 +25,9 @@ The dataset is hosted on AWS. Each boiling study can be downloaded separately.
 | [3D Pool Boiling Earth Gravity](https://anl.app.box.com/s/wwj2f9b0t2eetjmieoj163axmxctuswd)    | 140.7 GB |
 | [3D Pool Boiling Low Gravity](https://anl.app.box.com/s/vnsfq59k9gnkhxyhhrc48sjwj61sjnia/) | 71.5 GB |
 
-## Code Installation and Usage
+## Sample Code Installation and Usage
 
-The code currently assumes access to a fairly modern Nvidia GPU, though
+The code assumes access to a fairly modern Nvidia GPU, though
 it may also work on AMD GPUs if PyTorch is installed with Rocm support.
 Results have been reproduced on a Linux cluster with V100, A30, and A100 GPUs using PyTorch 2.0 and CUDA 11.7.
 
@@ -44,7 +45,4 @@ For CUDA 11.7 support,
 conda install pytorch torchvision pytorch-cuda=11.7 -c pytorch -c nvidia
 ~~~~
 
-## Repository Overview
-
-TODO: probably need to tidy things up more...
-
+To run the sample applications, ...

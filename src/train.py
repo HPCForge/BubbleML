@@ -69,21 +69,25 @@ def get_model(model_name, in_channels, out_channels):
                        out_channels=out_channels,
                        init_features=64)
     elif model_name == 'fno':
-        model = FNO(n_modes=(32, 32),
+        model = FNO(n_modes=(128, 128),
                     hidden_channels=64,
                     in_channels=in_channels,
                     out_channels=out_channels,
-                    n_layers=5)
+                    n_layers=5,
+                    factorization='tucker',
+                    implementation='factorized',
+                    rank=0.05)
     elif model_name == 'uno':
         model = UNO(in_channels=in_channels, 
                     out_channels=out_channels,
                     hidden_channels=64,
                     projection_channels=64,
                     uno_out_channels=[32,64,64,64,32],
-                    uno_n_modes=[[32,32],[32,32],[32,32],[32,32],[32,32]],
+                    uno_n_modes=[[32,32],[16,16],[16,16],[16,16],[32,32]],
                     uno_scalings=[[1.0,1.0],[1,1],[1,1],[1,1],[1,1]],
                     horizontal_skips_map=None,
-                    n_layers=5)
+                    n_layers=5,
+                    domain_padding=0.2)
     model = model.cuda().float()
     return model
 
