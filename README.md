@@ -25,6 +25,17 @@ The dataset is hosted on AWS. Each boiling study can be downloaded separately.
 | [3D Pool Boiling Earth Gravity](https://anl.app.box.com/s/wwj2f9b0t2eetjmieoj163axmxctuswd)    | 140.7 GB |
 | [3D Pool Boiling Low Gravity](https://anl.app.box.com/s/vnsfq59k9gnkhxyhhrc48sjwj61sjnia/) | 71.5 GB |
 
+## Model Checkpoints
+
+The model checkpoints are organized based on the dataset they were trained on. So,
+each link contains checkpoints FNO, UNO and UNet.
+
+| Models | Size |
+|----|----|
+| [Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
+| [Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
+| [Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
+
 ## Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
 it may also work on AMD GPUs if PyTorch is installed with Rocm support.
