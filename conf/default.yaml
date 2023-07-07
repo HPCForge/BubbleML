@@ -1,10 +1,8 @@
-hydra:
-  run:
-    dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/hydra/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-
-# These must set by the user.
-data_base_dir: /data/homezvol2/afeeney/crsp/ai4ts/share/
-log_dir: /data/homezvol2/afeeney/crsp/ai4ts/afeeney/train_log/
+# NOTE: The data_base_dir must be set by the user
+# Either explicitly set it in this file or set it as a command-line argument
+# when running the train script.
+data_base_dir:
+log_dir:
 
 train: True
 test: True

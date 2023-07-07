@@ -1,9 +1,9 @@
 name: fb_gravity
 transform: False
 train_paths:
-  - ${data_base_dir}/FlowBoilingStudies/Gravity-FC72-2D_HDF5/gravX-0.0001.hdf5
-  - ${data_base_dir}/FlowBoilingStudies/Gravity-FC72-2D_HDF5/gravX-0.01.hdf5
-  - ${data_base_dir}/FlowBoilingStudies/Gravity-FC72-2D_HDF5/gravX-0.05.hdf5
-  - ${data_base_dir}/FlowBoilingStudies/Gravity-FC72-2D_HDF5/gravX-0.5.hdf5
+  - ${data_base_dir}/FlowBoiling-Gravity-FC72-2D/gravX-0.0001.hdf5
+  - ${data_base_dir}/FlowBoiling-Gravity-FC72-2D/gravX-0.01.hdf5
+  - ${data_base_dir}/FlowBoiling-Gravity-FC72-2D/gravX-0.05.hdf5
+  - ${data_base_dir}/FlowBoiling-Gravity-FC72-2D/gravX-0.5.hdf5
 val_paths:
-  - ${data_base_dir}/FlowBoilingStudies/Gravity-FC72-2D_HDF5/gravX-0.1.hdf5
+  - ${data_base_dir}/FlowBoiling-Gravity-FC72-2D/gravX-0.1.hdf5

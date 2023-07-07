@@ -15,3 +15,4 @@ module load gcc/11.2.0
 python src/train.py \
 	dataset=FB_InletVel \
 	experiment=temp_uno \
+	experiment.train.max_epochs=75

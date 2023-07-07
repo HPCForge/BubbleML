@@ -1,0 +1,22 @@
+name: bubble_sciml
+channels:
+  - numba
+  - pytorch
+  - nvidia
+dependencies:
+  - pytorch
+  - torchvision
+  - pytorch-cuda=11.7
+  - numpy
+  - h5py
+  - numba
+  - pip
+  - pip:
+    - hydra-core
+    - neuraloperator
+    - opencv-python
+    - matplotlib
+    - tensorboard
+    - tensorly
+    - tensorly-torch
+    - zarr

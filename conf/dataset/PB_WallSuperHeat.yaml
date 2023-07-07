@@ -1,13 +1,13 @@
 name: wall_super_heat
 transform: True
 train_paths:
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-65.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-70.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-75.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-80.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-85.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-90.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-100.hdf5
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-150.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-65.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-70.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-75.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-80.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-85.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-90.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-100.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-120.hdf5
 val_paths:
-  - ${data_base_dir}/PB_simulation/WallSuperheat-FC72-2D_HDF5/Twall-95.hdf5
+  - ${data_base_dir}/PoolBoiling-WallSuperheat-FC72-2D/Twall-95.hdf5
