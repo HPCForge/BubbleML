@@ -12,7 +12,7 @@ class BoilingDataset(Dataset):
     def __init__(self, directory):
         super().__init__()
         filenames = sorted(glob.glob(directory + '/*'))
-        self._filenames = [f for f in filenames if 'plt_cnt' in f]
+        self._filenames = [f for f in filenames if 'plt_cnt' in f][:-1]
         with h5py.File(self._filenames[0]) as f:
             print(f.keys())
         if len(self._filenames) > 0:
@@ -71,8 +71,10 @@ class BoilingDataset(Dataset):
             blocks = frame.blocklist
             y_bs, x_bs = frame.nyb, frame.nxb
 
-            nblockx = int((frame.xmax - frame.xmin) / blocks[0].dx / x_bs)
-            nblocky = int((frame.ymax - frame.ymin) / blocks[0].dy / y_bs)
+            blockx_pixel = x_bs * round(int((frame.xmax - frame.xmin)/blocks[0].dx)/x_bs)
+            blocky_pixel = y_bs * round(int((frame.ymax - frame.ymin)/blocks[0].dy)/y_bs)
+            nblockx = int(blockx_pixel/ x_bs)
+            nblocky = int(blocky_pixel/ y_bs)
 
             nxb = nblockx * x_bs
             nyb = nblocky * y_bs
@@ -81,8 +83,8 @@ class BoilingDataset(Dataset):
             for key in frame.varlist:
                 var_dict[key] = np.empty((nyb, nxb))
                 for block in blocks:
-                    a, b, _ = block.get_relative_loc([frame.xmin, frame.ymin, 0])
-                    r, c = b * y_bs, a * x_bs 
+                    r = y_bs * round(int((nyb * (block.ymin - frame.ymin))/(frame.ymax - frame.ymin))/y_bs)
+                    c = x_bs * round(int((nxb * (block.xmin - frame.xmin))/(frame.xmax - frame.xmin))/x_bs)
                     var_dict[key][r:r+y_bs, c:c+x_bs] = block[key]
 
             var_dict['x'] = np.empty((nyb, nxb))
@@ -91,8 +93,8 @@ class BoilingDataset(Dataset):
             for block in blocks:
                 x, y = np.meshgrid(block.xrange('center'),
                                    block.yrange('center'))
-                a, b, _ = block.get_relative_loc([frame.xmin, frame.ymin, 0])
-                r, c = b * y_bs, a * x_bs 
+                r = y_bs * round(int((nyb * (block.ymin - frame.ymin))/(frame.ymax - frame.ymin))/y_bs)
+                c = x_bs * round(int((nxb * (block.xmin - frame.xmin))/(frame.xmax - frame.xmin))/x_bs)
                 var_dict['x'][r:r+y_bs,c:c+x_bs] = x 
                 var_dict['y'][r:r+y_bs,c:c+x_bs] = y
 

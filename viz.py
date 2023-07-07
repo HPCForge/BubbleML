@@ -79,8 +79,8 @@ def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, ve
         plt.close()
 
         # Plot velocity field
-        x = np.arange(0,512,1)
-        y = np.arange(0,512,1)
+        x = np.arange(0,velmag_field.shape[1],1)
+        y = np.arange(0,velmag_field.shape[0],1)
         X,Y = np.meshgrid(x,y)
 
         velmag_field[np.flipud(dist_fields[..., i])<0] = 0
