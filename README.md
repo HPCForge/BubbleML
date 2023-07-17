@@ -44,7 +44,7 @@ Results have been reproduced on a Linux cluster with V100, A30, and A100 GPUs us
 To install dependencies, we recommend creating a conda environment:
 
 ~~~~
-conda create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yam
+conda create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
 ~~~~
 
 ## Running Sample Code
