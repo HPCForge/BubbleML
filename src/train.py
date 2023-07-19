@@ -17,7 +17,6 @@ import time
 
 from op_lib.hdf5_dataset import (
         TempInputDataset,
-        VelDataset,
         TempVelDataset
 )
 from op_lib.unet import UNet2d 

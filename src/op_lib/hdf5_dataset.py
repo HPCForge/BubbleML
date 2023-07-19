@@ -59,61 +59,6 @@ class HDF5Dataset(Dataset):
     def __getitem__(self, timestep):
         assert False, 'Not Implemented'
 
-class TempDataset(HDF5Dataset):
-    def __init__(self, filename, transform=False, time_window=1):
-        super().__init__(filename, transform, time_window)
-        self.in_channels = 3 * self.time_window + 3
-        self.out_channels = 1
-
-    def _get_stack(self, timestep):
-        return torch.stack([
-            self._data['velx'][..., timestep],
-            self._data['vely'][..., timestep],
-            (self._data['dfun'][..., timestep] >= 0).float(),
-        ], dim=0)
-
-    def __getitem__(self, timestep):
-        input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window + 1)], dim=0)
-        label = self._data['temp'][..., timestep + self.time_window].unsqueeze(0)
-        return self._transform(input, label)
-
-    def write_temp(self, temp, timestep):
-        r""" Function is a no-op. Intended to match
-        interface of TempInputDataset
-        """
-        pass
-
-class VelDataset(HDF5Dataset):
-    def __init__(self, filename, transform=False, time_window=1):
-        super().__init__(filename, transform, time_window)
-        self.in_channels = 3 * self.time_window + 1
-        self.out_channels = 2
-
-    def _get_stack(self, timestep):
-        return torch.stack([
-            self._data['temp'][..., timestep],
-            self._data['velx'][..., timestep] / 20,
-            self._data['vely'][..., timestep] / 20,
-        ], dim=0)
-
-    def __getitem__(self, timestep):
-        input = torch.cat([self._get_stack(timestep + k) for k in range(self.time_window)], dim=0)
-        input = torch.cat([
-            input,
-            self._data['temp'][..., timestep + self.time_window].unsqueeze(0),
-        ], dim=0)
-        label = torch.stack([
-            self._data['velx'][..., timestep + self.time_window],
-            self._data['vely'][..., timestep + self.time_window],
-        ], dim=0)
-        return self._transform(input, label)
-
-    def write_velx(self, velx, timestep):
-        self._data['velx'][..., timestep + self.time_window] = velx
-
-    def write_vely(self, vely, timestep):
-        self._data['vely'][..., timestep + self.time_window] = vely
-
 class TempInputDataset(HDF5Dataset):
     r""" Same as TempDataset, but includes temp in the input stack
     """
