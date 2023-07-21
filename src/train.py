@@ -29,11 +29,6 @@ torch_dataset_map = {
     'vel_dataset': TempVelDataset
 }
 
-model_map = {
-    'unet2d': UNet2d,
-    'fno': FNO
-}
-
 trainer_map = {
     'temp_input_dataset': TempTrainer,
     'vel_dataset': VelTrainer
