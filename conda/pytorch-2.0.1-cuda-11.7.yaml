@@ -20,3 +20,5 @@ dependencies:
     - tensorly
     - tensorly-torch
     - zarr
+    - opt_einsum
+    - wandb
