@@ -30,6 +30,9 @@ def plt_iter_mae(temps, labels):
     plt.savefig('iter_mae.png', bbox_inches='tight', dpi=500)
 
 def plt_temp(temps, labels, model_name):
+    temps = (temps + 1) / 2
+    labels = (labels + 1) / 2
+
     plt.rc("font", family="serif", size=16, weight="bold")
     plt.rc("axes", labelweight="bold")
     for i in range(len(temps)):
