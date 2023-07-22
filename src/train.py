@@ -16,6 +16,7 @@ import os
 import time
 
 from op_lib.hdf5_dataset import (
+        HDF5ConcatDataset,
         TempInputDataset,
         TempVelDataset
 )
@@ -37,10 +38,19 @@ trainer_map = {
 def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
     time_window = cfg.experiment.train.time_window
-    train_dataset = ConcatDataset([
+
+    train_dataset = HDF5ConcatDataset([
         DatasetClass(p, transform=cfg.dataset.transform, time_window=time_window) for p in cfg.dataset.train_paths])
-    val_dataset = ConcatDataset([
+    train_max_temp = train_dataset.normalize_temp_()
+    train_max_vel = train_dataset.normalize_vel_()
+
+    val_dataset = HDF5ConcatDataset([
         DatasetClass(p, time_window=time_window) for p in cfg.dataset.val_paths])
+    val_dataset.normalize_temp_(train_max_temp)
+    val_dataset.normalize_vel_(train_max_vel)
+
+    assert val_dataset.absmax_temp() <= 1.5
+    assert val_dataset.absmax_vel() <= 1.5
     return train_dataset, val_dataset
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
@@ -106,7 +116,7 @@ def train_app(cfg):
     print('train size: ', len(train_dataloader))
     tail = cfg.dataset.val_paths[0].split('-')[-1]
     print(tail, tail[:-5])
-    val_variable = 0#int(tail[:-5])
+    val_variable = int(tail[:-5])
     print('T_wall of val sim: ', val_variable)
 
     exp = cfg.experiment

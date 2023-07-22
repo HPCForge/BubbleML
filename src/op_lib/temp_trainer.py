@@ -56,10 +56,8 @@ class TempTrainer:
             label = label.cuda().float()
             
             pred = self.model(input)
-            print(pred.size(), label.size())
             temp_loss = self.loss(pred, label)
             loss = temp_loss
-            torch.cuda.synchronize()
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -97,7 +95,7 @@ class TempTrainer:
             label = label.cuda().float().unsqueeze(0)
             with torch.no_grad():
                 pred = self.model(input)
-                temp = F.hardtanh(pred[:, 0], min_val=0, max_val=1)
+                temp = F.hardtanh(pred[:, 0], min_val=-1, max_val=1)
                 dataset.write_temp(temp, timestep)
                 temps.append(temp.detach().cpu())
                 labels.append(label[:, 0].detach().cpu())
