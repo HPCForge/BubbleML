@@ -9,10 +9,12 @@
 
 module load anaconda/2022.05
 . ~/.mycondaconf
-conda activate mf-pytorch2
+conda activate bubble-sciml
 module load gcc/11.2.0
 
 python src/train.py \
-	dataset=FB_InletVel \
-	experiment=temp_uno \
-	experiment.train.max_epochs=75
+	data_base_dir=/share/crsp/lab/ai4ts/share/BubbleML/ \
+	log_dir=/share/crsp/lab/ai4ts/afeeney/log_dir \
+	dataset=PB_SubCooled \
+	experiment=temp_unet2d \
+	model_checkpoint=/data/homezvol2/afeeney/crsp/ai4ts/afeeney/thermal_models/subcooled/UNet2d_temp_input_dataset_500_1690005305.pt \
