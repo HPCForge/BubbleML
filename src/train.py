@@ -20,7 +20,8 @@ from op_lib.hdf5_dataset import (
         TempInputDataset,
         TempVelDataset
 )
-from op_lib.unet import UNet2d 
+from models.unet import UNet2d 
+from models.twod_unet import Unet
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 
@@ -38,14 +39,22 @@ trainer_map = {
 def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
     time_window = cfg.experiment.train.time_window
+    future_window = cfg.experiment.train.future_window
 
+    # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
-        DatasetClass(p, transform=cfg.dataset.transform, time_window=time_window) for p in cfg.dataset.train_paths])
+        DatasetClass(p,
+                     transform=cfg.dataset.transform,
+                     time_window=time_window,
+                     future_window=future_window) for p in cfg.dataset.train_paths])
     train_max_temp = train_dataset.normalize_temp_()
     train_max_vel = train_dataset.normalize_vel_()
 
+    # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
-        DatasetClass(p, time_window=time_window) for p in cfg.dataset.val_paths])
+        DatasetClass(p,
+                     time_window=time_window,
+                     future_window=future_window) for p in cfg.dataset.val_paths])
     val_dataset.normalize_temp_(train_max_temp)
     val_dataset.normalize_vel_(train_max_vel)
 
@@ -67,8 +76,17 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
     return train_dataloader, val_dataloader
 
 def get_model(model_name, in_channels, out_channels):
-    assert model_name in ('unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
-    if model_name == 'unet2d': 
+    assert model_name in ('unet', 'unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
+    if model_name == 'unet':
+        model = Unet(2, 1, 1, 1,
+                     time_history=3,
+                     time_future=1,
+                     hidden_channels=16,
+                     activation='gelu',
+                     mid_attn=True,
+                     norm=True,
+                     use1x1=True)
+    elif model_name == 'unet2d': 
         model = UNet2d(in_channels=in_channels,
                        out_channels=out_channels,
                        init_features=64)
@@ -149,7 +167,7 @@ def train_app(cfg):
         trainer.train(exp.train.max_epochs)
         timestamp = int(time.time())
         ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
-        ckpt_root = Path.home() / f'crsp/ai4ts/afeeney/thermal_models/{cfg.dataset.name}'
+        ckpt_root = Path.home() / f'{log_dir}/{cfg.dataset.name}'
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
