@@ -89,7 +89,7 @@ python src/train.py data_base_dir=/your/path/to/BubbleML dataset=PB_SubCooled ex
 
 If you find this dataset useful in your research, please consider citing the following paper:
 
-~~~~
+```bibtex
 @article{hassan2023bubbleml,
       title={BubbleML: A Multi-Physics Dataset and Benchmarks for Machine Learning}, 
       author={Sheikh Md Shakeel Hassan and Arthur Feeney and Akash Dhruv and Jihoon Kim and Youngjoon Suh and Jaiyoung Ryu and Yoonjin Won and Aparna Chandramowlishwaran},
@@ -98,4 +98,4 @@ If you find this dataset useful in your research, please consider citing the fol
       archivePrefix={arXiv},
       primaryClass={cs.LG}
 }
-~~~~
+```
