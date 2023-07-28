@@ -2,12 +2,12 @@ torch_dataset_name: vel_dataset
 
 train:
   max_epochs: 500 
-  batch_size: 8
+  batch_size: 2
   shuffle_data: True
-  time_window: 6
+  time_window: 3
 
 model:
-  model_name: unet2d
+  model_name: unet
 
 optimizer:
   initial_lr: 1e-3
