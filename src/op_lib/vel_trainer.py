@@ -21,6 +21,7 @@ class VelTrainer:
                  val_dataloader,
                  optimizer,
                  lr_scheduler,
+                 val_variable,
                  writer,
                  cfg):
         self.model = model
@@ -28,6 +29,7 @@ class VelTrainer:
         self.val_dataloader = val_dataloader
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
+        self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg
         self.loss = LpLoss(d=2)
@@ -44,14 +46,12 @@ class VelTrainer:
         for iter, (input, label) in enumerate(self.train_dataloader):
             input = input.cuda().float()
             label = label.cuda().float()
-            #sizes = torch.tensor(range(64, input.size(-1) + 1, 64))
-            #size = sizes[torch.randperm(sizes.size(0))[0]].item()
-            #input = TF.resize(input, size)
-            #label = TF.resize(label, size)
             pred = self.model(input)
+            print(pred.size(), label.size())
             temp_loss = self.loss(pred[:, 0], label[:, 0])
             velx_loss = self.loss(pred[:, 1], label[:, 1])
             vely_loss = self.loss(pred[:, 2], label[:, 2])
+            print(f'{temp_loss}, {velx_loss}, {vely_loss}')
             loss = (temp_loss + velx_loss + vely_loss) / 3
             self.optimizer.zero_grad()
             loss.backward()
@@ -69,6 +69,7 @@ class VelTrainer:
                 temp_loss = F.mse_loss(pred[:, 0], label[:, 0])
                 velx_loss = F.mse_loss(pred[:, 1], label[:, 1])
                 vely_loss = F.mse_loss(pred[:, 2], label[:, 2])
+                print(f'{temp_loss}, {velx_loss}, {vely_loss}')
                 loss = (temp_loss + velx_loss + vely_loss) / 3
             print(f'val loss: {loss}')
             del input, label
@@ -92,8 +93,8 @@ class VelTrainer:
                 velx = F.hardtanh(pred[:, 1], min_val=-1, max_val=1)
                 vely = F.hardtanh(pred[:, 2], min_val=-1, max_val=1)
                 dataset.write_temp(temp, timestep)
-                #dataset.write_velx(velx * 20, timestep)
-                #dataset.write_vely(vely * 20, timestep)
+                dataset.write_velx(velx, timestep)
+                dataset.write_vely(vely, timestep)
                 temp_preds.append(temp.detach().cpu())
                 velx_preds.append(velx.detach().cpu())
                 vely_preds.append(vely.detach().cpu())
