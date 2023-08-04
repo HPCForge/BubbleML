@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p free
+#SBATCH -p standard
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=20
@@ -7,7 +7,7 @@
 
 module load anaconda/2022.05
 . ~/.mycondaconf
-conda activate mf-pytorch2
+conda activate bubble-sciml 
 module load gcc/11.2.0
 
 python scripts/boxkit_dataset.py

@@ -67,11 +67,18 @@ def plt_temp(temps, labels, model_name):
         plt.close()
 
 def plt_vel(vel_preds, vel_labels, max_mag, model_name):
+
+    #vel_preds = (vel_preds + 1) / 2
+    #vel_labels = (vel_labels + 1) / 2
+
+    max_mag = vel_labels.max()
+    min_mag = vel_labels.min()
+
     for i in range(len(vel_preds)):
         i_str = str(i).zfill(3)
 
         def plt_temp_arr(f, ax, arr, mm, title):
-            cm_object = ax.imshow(arr, vmin=0, vmax=mm, cmap='viridis')
+            cm_object = ax.imshow(arr, vmin=min_mag, vmax=max_mag, cmap='viridis')
             ax.set_title(title)
             ax.axis('off')
             return cm_object
@@ -84,7 +91,7 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
         plt_temp_arr(f, axarr[1], np.flipud(pred_mag), max_mag, model_name)
         f.colorbar(cm_object, ax=axarr[1], fraction=0.05)
 
-        cm_object = plt_temp_arr(f, axarr[2], np.flipud(np.abs(label_mag - pred_mag)), 10, 'Absolute Error')
+        cm_object = plt_temp_arr(f, axarr[2], np.flipud(np.abs(label_mag - pred_mag)), 1, 'Absolute Error')
         f.colorbar(cm_object, ax=axarr[2], fraction=0.05)
 
         #vx_pred, vx_label = velx_preds[i], velx_labels[i]
