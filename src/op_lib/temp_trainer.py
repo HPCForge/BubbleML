@@ -8,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
 from .metrics import compute_metrics, write_metrics
@@ -91,19 +92,23 @@ class TempTrainer:
         self.model.eval()
         temps = []
         labels = []
+        inference_times = []
         for timestep in range(len(dataset)):
+            start = time.perf_counter()
             input, label = dataset[timestep]
-            input = input.cuda().float().unsqueeze(0)
             label = label.cuda().float().unsqueeze(0)
+            input = input.cuda().float().unsqueeze(0)
             with torch.no_grad():
                 pred = self.model(input)
                 temp = F.hardtanh(pred[:, 0], min_val=0, max_val=1)
+                inference_times.append(time.perf_counter()-start)
                 dataset.write_temp(temp, timestep)
                 temps.append(temp.detach().cpu())
                 labels.append(label[:, 0].detach().cpu())
         temps = torch.cat(temps, dim=0)
         labels = torch.cat(labels, dim=0)
-
+        
+        print(f'Total inference time for {len(dataset)} frames: {sum(inference_times)}')
         dfun = dataset.get_dfun().permute((2, 0, 1))
         metrics = compute_metrics(temps, labels, dfun)
         print(metrics)
