@@ -2,6 +2,7 @@
 *.hdf5
 
 # FFMPEG video output
+*.png
 *.mp4
 output.gif
 
@@ -9,10 +10,13 @@ output.gif
 im/
 test_im/
 
-# slurm output files
+# slurm and tensorboard logs
+logs/
+maes*
 slurm*.out
 
 # env loading script
+*.sub
 env.sh
 
 
