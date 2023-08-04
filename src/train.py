@@ -10,7 +10,6 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.models import FNO, UNO
 from pathlib import Path
 import os
 import time
@@ -20,11 +19,11 @@ from op_lib.hdf5_dataset import (
         TempInputDataset,
         TempVelDataset
 )
-from models.unet import UNet2d 
-from models.twod_unet import Unet
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+
+from models.get_model import get_model
 
 
 torch_dataset_map = {
@@ -78,44 +77,6 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                 pin_memory=True)
     return train_dataloader, val_dataloader
 
-def get_model(model_name, in_channels, out_channels, time_window, future_window):
-    assert model_name in ('unet', 'unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
-    if model_name == 'unet':
-        model = Unet(1, 1, 1, 0,
-                     time_history=time_window,
-                     time_future=future_window,
-                     hidden_channels=32,
-                     activation='gelu',
-                     mid_attn=True,
-                     norm=True,
-                     use1x1=True)
-    elif model_name == 'unet2d': 
-        model = UNet2d(in_channels=in_channels,
-                       out_channels=out_channels,
-                       init_features=32)
-    elif model_name == 'fno':
-        model = FNO(n_modes=(128, 128),
-                    hidden_channels=32,
-                    domain_padding=0.2,
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    n_layers=5,
-                    factorization='tucker',
-                    implementation='factorized',
-                    rank=0.05)
-    elif model_name == 'uno':
-        model = UNO(in_channels=in_channels, 
-                    out_channels=out_channels,
-                    hidden_channels=64,
-                    projection_channels=64,
-                    uno_out_channels=[32,64,64,64,32],
-                    uno_n_modes=[[32,32],[16,16],[16,16],[16,16],[32,32]],
-                    uno_scalings=[[1.0,1.0],[1,1],[1,1],[1,1],[1,1]],
-                    horizontal_skips_map=None,
-                    n_layers=5,
-                    domain_padding=0.2)
-    model = model.cuda().float()
-    return model
 
 @hydra.main(version_base=None, config_path='../conf', config_name='default')
 def train_app(cfg):
@@ -149,12 +110,15 @@ def train_app(cfg):
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
 
-    model = get_model(model_name, in_channels, out_channels, exp.train.time_window, exp.train.future_window)
+    model = get_model(model_name, in_channels, out_channels, exp)
+
     if cfg.model_checkpoint:
         model.load_state_dict(torch.load(cfg.model_checkpoint))
     print(model)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=exp.optimizer.initial_lr)
+    optimizer = torch.optim.AdamW(model.parameters(),
+                                  lr=exp.optimizer.initial_lr,
+                                  weight_decay=exp.optimizer.weight_decay)
     #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
     #                                               step_size=exp.lr_scheduler.patience,
     #                                               gamma=exp.lr_scheduler.factor)
