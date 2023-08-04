@@ -24,6 +24,7 @@ from models.unet import UNet2d
 from models.twod_unet import Unet
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
+from op_lib.push_vel_trainer import PushVelTrainer
 
 
 torch_dataset_map = {
@@ -33,20 +34,22 @@ torch_dataset_map = {
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
-    'vel_dataset': VelTrainer
+    'vel_dataset': PushVelTrainer
 }
 
 def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
     time_window = cfg.experiment.train.time_window
     future_window = cfg.experiment.train.future_window
+    push_forward_steps = cfg.experiment.train.push_forward_steps 
 
     # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
         DatasetClass(p,
                      transform=cfg.dataset.transform,
                      time_window=time_window,
-                     future_window=future_window) for p in cfg.dataset.train_paths])
+                     future_window=future_window,
+                     push_forward_steps=push_forward_steps) for p in cfg.dataset.train_paths])
     train_max_temp = train_dataset.normalize_temp_()
     train_max_vel = train_dataset.normalize_vel_()
 
@@ -75,13 +78,13 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                 pin_memory=True)
     return train_dataloader, val_dataloader
 
-def get_model(model_name, in_channels, out_channels):
+def get_model(model_name, in_channels, out_channels, time_window, future_window):
     assert model_name in ('unet', 'unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
     if model_name == 'unet':
-        model = Unet(2, 1, 1, 1,
-                     time_history=3,
-                     time_future=1,
-                     hidden_channels=16,
+        model = Unet(1, 1, 1, 0,
+                     time_history=time_window,
+                     time_future=future_window,
+                     hidden_channels=32,
                      activation='gelu',
                      mid_attn=True,
                      norm=True,
@@ -89,10 +92,11 @@ def get_model(model_name, in_channels, out_channels):
     elif model_name == 'unet2d': 
         model = UNet2d(in_channels=in_channels,
                        out_channels=out_channels,
-                       init_features=64)
+                       init_features=32)
     elif model_name == 'fno':
         model = FNO(n_modes=(128, 128),
-                    hidden_channels=64,
+                    hidden_channels=32,
+                    domain_padding=0.2,
                     in_channels=in_channels,
                     out_channels=out_channels,
                     n_layers=5,
@@ -120,6 +124,9 @@ def train_app(cfg):
     assert cfg.test or cfg.train
     assert cfg.data_base_dir is not None
     assert cfg.log_dir is not None
+    assert cfg.experiment.train.time_window > 0
+    assert cfg.experiment.train.future_window > 0
+    assert cfg.experiment.train.push_forward_steps > 0
 
     job_id = os.getenv('SLURM_JOB_ID')
     if job_id:
@@ -142,18 +149,24 @@ def train_app(cfg):
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
 
-    model = get_model(model_name, in_channels, out_channels)
+    model = get_model(model_name, in_channels, out_channels, exp.train.time_window, exp.train.future_window)
     if cfg.model_checkpoint:
         model.load_state_dict(torch.load(cfg.model_checkpoint))
     print(model)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=exp.optimizer.initial_lr)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=exp.lr_scheduler.patience,
-                                                   gamma=exp.lr_scheduler.factor)
+    #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+    #                                               step_size=exp.lr_scheduler.patience,
+    #                                               gamma=exp.lr_scheduler.factor)
+    total_iters = exp.train.max_epochs * len(train_dataloader)
+    lr_scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer,
+                                                         total_iters=total_iters)
+
 
     TrainerClass = trainer_map[exp.torch_dataset_name]
     trainer = TrainerClass(model,
+                           exp.train.future_window,
+                           exp.train.push_forward_steps,
                            train_dataloader,
                            val_dataloader,
                            optimizer,
