@@ -8,6 +8,10 @@ train:
 
 model:
   model_name: uno
+  hidden_channels: 64
+  projection_channels: 256
+  n_layers: 5
+  domain_padding: 0.2
 
 optimizer:
   initial_lr: 1e-3

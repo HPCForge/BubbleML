@@ -10,6 +10,10 @@ train:
 
 model:
   model_name: fno
+  n_modes: [32, 32]
+  hidden_channels: 32
+  domain_padding: 0.2
+  n_layers: 4
 
 optimizer:
   initial_lr: 1e-3

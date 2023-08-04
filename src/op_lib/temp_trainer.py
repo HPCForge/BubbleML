@@ -108,11 +108,12 @@ class TempTrainer:
             write_metrics(pred, label, global_iter, 'Val', self.writer)
             del temp, vel, label
 
-    def test(self, dataset):
+    def test(self, dataset, max_timestep=100):
         self.model.eval()
         temps = []
         labels = []
-        for timestep in range(0, len(dataset), self.future_window):
+        time = min(len(dataset), max_timestep)
+        for timestep in range(0, time, self.future_window):
             coords, temp, vel, label = dataset[timestep]
             temp = temp.cuda().float().unsqueeze(0)
             vel = vel.cuda().float().unsqueeze(0)
@@ -120,14 +121,13 @@ class TempTrainer:
             with torch.no_grad():
                 pred = self._forward_int(temp, vel)
                 temp = F.hardtanh(pred, min_val=-1, max_val=1).squeeze(0)
-                print(pred.size(), temp.size())
                 dataset.write_temp(temp.permute((1, 2, 0)), timestep)
                 temps.append(temp.detach().cpu())
                 labels.append(label.detach().cpu())
 
         temps = torch.cat(temps, dim=0)
         labels = torch.cat(labels, dim=0)
-        dfun = dataset.get_dfun().permute((2, 0, 1))
+        dfun = dataset.get_dfun().permute((2, 0, 1))[0:time:self.future_window]
 
         metrics = compute_metrics(temps, labels, dfun)
         print(metrics)

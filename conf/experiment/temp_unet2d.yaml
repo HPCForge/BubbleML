@@ -9,10 +9,13 @@ train:
   push_forward_steps: 1
 
 model:
-  model_name: unet
+  model_name: unet2d
+  init_features: 32
+  
 
 optimizer:
   initial_lr: 1e-3
+  weight_decay: 0.01
 
 lr_scheduler:
   factor: 0.5

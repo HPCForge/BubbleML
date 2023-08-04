@@ -80,12 +80,10 @@ class HDF5Dataset(Dataset):
         return max(self._data['velx'].abs().max(), self._data['vely'].abs().max())
 
     def normalize_temp_(self, scale):
-        assert scale >= self._data['temp'].max(), 'temp scale = {scale} too small'
         self._data['temp'] = 2 * (self._data['temp'] / scale) - 1
 
     def normalize_vel_(self, scale):
         for v in ('velx', 'vely'):
-            assert scale >= self._data[v].max(), f'{v} scale = {scale} too small'
             self._data[v] = self._data[v] / scale
 
     def get_x(self):
