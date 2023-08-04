@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import torch
+from pathlib import Path
 
 def temp_cmap():
     temp_ranges = [0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.134, 0.167,
@@ -57,6 +58,7 @@ def plt_temp(temps, labels, model_name):
                    pad=0.02)
 
         f.set_size_inches(w=6, h=3)
+        Path('test_im/temp').mkdir(parents=True, exist_ok=True)
         plt.savefig(f'test_im/temp/{i_str}.png',
                     dpi=600,
                     bbox_inches='tight',
@@ -91,6 +93,6 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
         #n = np.sqrt(xd + yd)
         #cm_object = plt_temp_arr(f, axarr[1, 1], np.flipud(n), 1, 'L2 Error')
         #f.colorbar(cm_object, ax=axarr[1, 1], fraction=0.05)
-
+        Path('test_im/vel').mkdir(parents=True, exist_ok=True)
         plt.savefig(f'test_im/vel/{i_str}.png', dpi=500)
         plt.close()

@@ -20,6 +20,7 @@ from op_lib.hdf5_dataset import (
         TempVelDataset
 )
 from op_lib.unet import UNet2d 
+from op_lib.fourier_unet import FourierUnet
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 
@@ -57,7 +58,7 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
     return train_dataloader, val_dataloader
 
 def get_model(model_name, in_channels, out_channels):
-    assert model_name in ('unet2d', 'fno', 'uno'), f'Model name {model_name} invalid'
+    assert model_name in ('unet2d', 'fno', 'uno', 'ufnet'), f'Model name {model_name} invalid'
     if model_name == 'unet2d': 
         model = UNet2d(in_channels=in_channels,
                        out_channels=out_channels,
@@ -82,6 +83,15 @@ def get_model(model_name, in_channels, out_channels):
                     horizontal_skips_map=None,
                     n_layers=5,
                     domain_padding=0.2)
+    elif model_name == 'ufnet':
+        model = FourierUnet(input_channels=in_channels, 
+                    output_channels=out_channels,
+                    hidden_channels=64,
+                    modes1=16,
+                    modes2=16,
+                    norm=True,
+                    n_fourier_layers=1
+        )
     model = model.cuda().float()
     return model
 
@@ -139,7 +149,7 @@ def train_app(cfg):
         trainer.train(exp.train.max_epochs)
         timestamp = int(time.time())
         ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
-        ckpt_root = Path.home() / f'crsp/ai4ts/afeeney/thermal_models/{cfg.dataset.name}'
+        ckpt_root = '/share/crsp/lab/ai4ts/sheikhh1/thermal_models/{cfg.dataset.name}'
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
