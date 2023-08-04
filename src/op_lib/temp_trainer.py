@@ -52,7 +52,6 @@ class TempTrainer:
             print('epoch ', epoch)
             self.train_step(epoch)
             self.val_step(epoch)
-            self.lr_scheduler.step()
 
     def _forward_int(self, temp, vel):
         input = torch.cat((temp, vel), dim=1)
@@ -87,6 +86,7 @@ class TempTrainer:
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            self.lr_scheduler.step()
             
             print(f'train loss: {loss}')
             global_iter = epoch * len(self.train_dataloader) + iter
