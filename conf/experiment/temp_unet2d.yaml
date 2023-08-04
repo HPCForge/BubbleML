@@ -5,10 +5,11 @@ train:
   batch_size: 8
   shuffle_data: True
   time_window: 3
-  future_window: 3
+  future_window: 1
+  push_forward_steps: 1
 
 model:
-  model_name: unet2d
+  model_name: unet
 
 optimizer:
   initial_lr: 1e-3

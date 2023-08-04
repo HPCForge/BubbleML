@@ -2,10 +2,10 @@
 #SBATCH -A amowli_lab_gpu
 #SBATCH -p gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A30:1
+#SBATCH --gres=gpu:A100:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=20
-#SBATCH --time=00:30:00
+#SBATCH --time=016:00:00
 
 module load anaconda/2022.05
 . ~/.mycondaconf
@@ -17,5 +17,7 @@ python src/train.py \
 	log_dir=/share/crsp/lab/ai4ts/afeeney/log_dir \
 	dataset=PB_SubCooled \
 	experiment=temp_unet2d \
-	experiment.train.max_epochs=1
+	experiment.train.max_epochs=1 \
+	#experiment.lr_scheduler.patience=50
+	#model_checkpoint=/share/crsp/lab/ai4ts/afeeney/log_dir/23089030/subcooled/UNet2d_vel_dataset_100_1691046606.pt \
 	#model_checkpoint=/data/homezvol2/afeeney/crsp/ai4ts/afeeney/thermal_models/subcooled/UNet2d_temp_input_dataset_500_1690005305.pt \

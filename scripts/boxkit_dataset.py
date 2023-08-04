@@ -103,13 +103,16 @@ class BoilingDataset(Dataset):
 
 def unblock_dataset(write_dir, read_dir):
     b = BoilingDataset(read_dir)
-    dir_name = read_dir[read_dir.find('inletVelScale-'):]
+    dir_name = read_dir[read_dir.find('Twall-'):]
     b.to_hdf5(f'{target}/{dir_name}.hdf5')
 
 if __name__ == '__main__':
-    target = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/VelScale-FC72-2D_HDF5/')
-    base = str(Path.home() / 'crsp/ai4ts/share/FlowBoilingStudies/VelScale-FC72-2D/')
-    subdirs = [f for f in glob.glob(f'{base}/*') if 'inletVelScale-' in f]
+    target = str(Path.home() / '/share/crsp/lab/ai4ts/share/simul_ts_0.1/SubCooled-FC72-2D_HDF5/')
+    Path(target).mkdir(parents=True, exist_ok=True)
+
+    base = str(Path.home() / '/share/crsp/lab/ai4ts/share/simul_ts_0.1/SubCooled-FC72-2D/')
+
+    subdirs = [f for f in glob.glob(f'{base}/*') if 'Twall-' in f]
     print(subdirs)
     
     output = Parallel(n_jobs=len(subdirs))(delayed(unblock_dataset)(target, subdir) for subdir in subdirs)

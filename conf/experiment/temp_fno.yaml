@@ -5,6 +5,8 @@ train:
   batch_size: 8
   shuffle_data: True
   time_window: 3
+  future_window: 3
+  push_forward_steps: 2
 
 model:
   model_name: fno
