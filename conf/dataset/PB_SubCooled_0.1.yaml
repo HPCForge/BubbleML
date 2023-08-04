@@ -1,0 +1,6 @@
+name: subcooled
+transform: True
+train_paths:
+  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-100.hdf5
+val_paths:
+  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-103.hdf5
