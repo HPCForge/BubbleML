@@ -1,9 +1,12 @@
 from neuralop.models import FNO, UNO
 from .unet import UNet2d 
+from .fourier_unet import FourierUnet
 from .twod_unet.twod_unet import Unet
 
 _UNET2D = 'unet2d'
 _UNET_MOD_ATTN = 'unet_mod_attn'
+
+_UFNET = 'ufnet'
 
 _FNO = 'fno'
 
@@ -12,6 +15,7 @@ _UNO = 'uno'
 _MODEL_LIST = [
     _UNET2D,
     _UNET_MOD_ATTN,
+    _UFNET,
     _FNO,
     _UNO,
 ]
@@ -31,6 +35,14 @@ def get_model(model_name, in_channels, out_channels, exp):
         model = UNet2d(in_channels=in_channels,
                        out_channels=out_channels,
                        init_features=exp.model.init_features)
+    elif model_name == _UFNET:
+        model = FourierUnet(input_channels=in_channels,
+                            output_channels=out_channels,
+                            hidden_channels=exp.model.hidden_channels,
+                            modes1=exp.model.modes1,
+                            modes2=exp.model.modes2,
+                            norm=True,
+                            n_fourier_layers=exp.model.n_fourier_layers)
     elif model_name == _FNO:
         model = FNO(n_modes=exp.model.n_modes,
                     hidden_channels=exp.model.hidden_channels,
