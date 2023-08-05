@@ -11,12 +11,9 @@ train:
   push_forward_steps: 1
 
 model:
-  model_name: ufnet
-  hidden_channels: 64
-  modes1: 16
-  modes2: 16
-  n_fourier_layers: 2
-
+  model_name: unet_mod_attn
+  hidden_channels: 32
+  
 optimizer:
   initial_lr: 1e-3
   weight_decay: 0.01

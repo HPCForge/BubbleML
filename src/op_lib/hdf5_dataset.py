@@ -143,13 +143,13 @@ class TempInputDataset(HDF5Dataset):
     """
     def __init__(self, filename, transform=False, time_window=1, future_window=1, push_forward_steps=1):
         super().__init__(filename, transform, time_window, future_window, push_forward_steps)
-        self.in_channels = 3 * self.time_window
+        self.in_channels = 3 * self.time_window + 2 * self.future_window
         self.out_channels = self.future_window
 
     def __getitem__(self, timestep):
         coords = self._get_coords(timestep)
         temps = torch.stack([self._get_temp(timestep + k) for k in range(self.time_window)], dim=0)
-        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0) 
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0) 
         base_time = timestep + self.time_window 
         label = torch.stack([self._get_temp(base_time + k) for k in range(self.future_window)], dim=0)
         return (coords, *self._transform(temps, vel, label))

@@ -1,19 +1,17 @@
 import os
 from neuralop.models import FNO, UNO
-from .unet import UNet2d 
-from .fourier_unet import FourierUnet
-from .twod_unet.twod_unet import Unet
+from .pdebench.unet import UNet2d 
+from .pdearena.unet import Unet, FourierUnet
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 _UNET2D = 'unet2d'
-_UNET_MOD_ATTN = 'unet_mod_attn'
 
+_UNET_MOD_ATTN = 'unet_mod_attn'
 _UFNET = 'ufnet'
 
 _FNO = 'fno'
-
 _UNO = 'uno'
 
 _MODEL_LIST = [
@@ -27,12 +25,11 @@ _MODEL_LIST = [
 def get_model(model_name, in_channels, out_channels, exp):
     assert model_name in _MODEL_LIST, f'Model name {model_name} invalid'
     if model_name == _UNET_MOD_ATTN:
-        model = Unet(1, 1, 1, 0,
-                     time_history=exp.train.time_window,
-                     time_future=exp.train.future_window,
+        model = Unet(in_channels=in_channels,
+                     out_channels=out_channels,
                      hidden_channels=exp.model.hidden_channels,
                      activation='gelu',
-                     mid_attn=True,
+                     mid_attn=False,
                      norm=True,
                      use1x1=True)
     elif model_name == _UNET2D: 
@@ -40,8 +37,8 @@ def get_model(model_name, in_channels, out_channels, exp):
                        out_channels=out_channels,
                        init_features=exp.model.init_features)
     elif model_name == _UFNET:
-        model = FourierUnet(input_channels=in_channels,
-                            output_channels=out_channels,
+        model = FourierUnet(in_channels=in_channels,
+                            out_channels=out_channels,
                             hidden_channels=exp.model.hidden_channels,
                             modes1=exp.model.modes1,
                             modes2=exp.model.modes2,
@@ -70,7 +67,8 @@ def get_model(model_name, in_channels, out_channels, exp):
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()
-        model = DDP(model, device_ids=[local_rank], output_device=local_rank)
+        model = DDP(model, device_ids=[local_rank], output_device=local_rank,
+                    find_unused_parameters=False)
     else:
         model = model.cuda().float()
     return model

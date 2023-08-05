@@ -4,7 +4,6 @@ import torch
 from torch import nn
 import torchvision
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau, PolynomialLR
 from torch.utils.data import ConcatDataset, DataLoader, Sampler
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
@@ -39,6 +38,12 @@ trainer_map = {
     'temp_input_dataset': TempTrainer,
     'vel_dataset': PushVelTrainer
 }
+
+class LinearWarmupLR(torch.optim.lr_scheduler.LambdaLR):
+    def __init__(self, optimizer, warmup_iters):
+        self.warmup_iters = warmup_iters
+        warmup_func = lambda current_step: min(1, current_step / self.warmup_iters)
+        super().__init__(optimizer, lr_lambda=warmup_func)
 
 def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
@@ -135,13 +140,21 @@ def train_app(cfg):
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=exp.optimizer.initial_lr,
                                   weight_decay=exp.optimizer.weight_decay)
-    #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-    #                                               step_size=exp.lr_scheduler.patience,
-    #                                               gamma=exp.lr_scheduler.factor)
-    total_iters = exp.train.max_epochs * len(train_dataloader)
-    lr_scheduler = torch.optim.lr_scheduler.PolynomialLR(optimizer,
-                                                         total_iters=total_iters)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                   step_size=exp.lr_scheduler.patience,
+                                                   gamma=exp.lr_scheduler.factor)
 
+
+
+    #total_iters = exp.train.max_epochs * len(train_dataloader)
+    #warmup_iters = max(1, int(dist_utils.world_size() * 0.01 * total_iters))
+    #warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
+    #warm_iters = total_iters - warmup_iters
+    #warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
+    #                                                      total_iters=warm_iters)
+    # SequentialLR produces a deprecation warning when calling sub-schedulers.
+    # https://github.com/pytorch/pytorch/issues/76113
+    #lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
 
     TrainerClass = trainer_map[exp.torch_dataset_name]
     trainer = TrainerClass(model,
