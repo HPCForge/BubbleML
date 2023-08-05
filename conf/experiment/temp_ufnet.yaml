@@ -1,0 +1,25 @@
+torch_dataset_name: temp_input_dataset 
+
+train:
+  max_epochs: 500 
+  batch_size: 8
+  shuffle_data: True
+  time_window: 3
+  future_window: 1
+  push_forward_steps: 1
+
+model:
+  model_name: ufnet
+  hidden_channels: 64
+  modes1: 16
+  modes2: 16
+  n_fourier_layers: 2
+
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 0.01
+
+lr_scheduler:
+  factor: 0.5
+  patience: 100
+  min_lr: 1e-8
