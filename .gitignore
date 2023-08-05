@@ -6,13 +6,17 @@
 output.gif
 
 # image directories
+*.png
 im/
 test_im/
 
-# slurm output files
+# slurm and tensorboard logs output files
+logs/
+maes*
 slurm*.out
 
 # env loading script
+*.sub
 env.sh
 
 
