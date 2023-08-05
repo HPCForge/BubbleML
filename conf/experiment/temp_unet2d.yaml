@@ -1,5 +1,7 @@
 torch_dataset_name: temp_input_dataset 
 
+distributed: True
+
 train:
   max_epochs: 500 
   batch_size: 8

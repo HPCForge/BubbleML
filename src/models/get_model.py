@@ -1,7 +1,11 @@
+import os
 from neuralop.models import FNO, UNO
 from .unet import UNet2d 
 from .fourier_unet import FourierUnet
 from .twod_unet.twod_unet import Unet
+
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 
 _UNET2D = 'unet2d'
 _UNET_MOD_ATTN = 'unet_mod_attn'
@@ -63,5 +67,10 @@ def get_model(model_name, in_channels, out_channels, exp):
                     uno_scalings=[[1,1],[0.5,0.5],[1,1],[1,1],[2,2]],
                     n_layers=exp.model.n_layers,
                     domain_padding=exp.model.domain_padding)
-    model = model.cuda().float()
+    if exp.distributed:
+        local_rank = int(os.environ['LOCAL_RANK'])
+        model = model.to(local_rank).float()
+        model = DDP(model, device_ids=[local_rank], output_device=local_rank)
+    else:
+        model = model.cuda().float()
     return model
