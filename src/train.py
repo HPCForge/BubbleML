@@ -5,7 +5,7 @@ from torch import nn
 import torchvision
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau, PolynomialLR
-from torch.utils.data import ConcatDataset, DataLoader
+from torch.utils.data import ConcatDataset, DataLoader, Sampler
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
@@ -13,6 +13,9 @@ import numpy as np
 from pathlib import Path
 import os
 import time
+
+from torch.utils.data.distributed import DistributedSampler
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
@@ -22,6 +25,7 @@ from op_lib.hdf5_dataset import (
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib import dist_utils
 
 from models.get_model import get_model
 
@@ -65,12 +69,22 @@ def build_datasets(cfg):
     return train_dataset, val_dataset
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
+    if cfg.experiment.distributed:
+        SamplerClass = DistributedSampler
+    else:
+        SamplerClass = Sampler
+    train_sampler = SamplerClass(dataset=train_dataset,
+                                 shuffle=cfg.experiment.train.shuffle_data)
+    val_sampler = SamplerClass(dataset=val_dataset,
+                               shuffle=False)
+        
     train_dataloader = DataLoader(train_dataset, 
+                                  sampler=train_sampler,
                                   batch_size=cfg.experiment.train.batch_size,
-                                  shuffle=cfg.experiment.train.shuffle_data,
                                   num_workers=1,
                                   pin_memory=True)
     val_dataloader = DataLoader(val_dataset, 
+                                sampler=val_sampler,
                                 batch_size=cfg.experiment.train.batch_size,
                                 shuffle=False,
                                 num_workers=1,
@@ -88,6 +102,8 @@ def train_app(cfg):
     assert cfg.experiment.train.time_window > 0
     assert cfg.experiment.train.future_window > 0
     assert cfg.experiment.train.push_forward_steps > 0
+
+    dist_utils.initialize('nccl')
 
     job_id = os.getenv('SLURM_JOB_ID')
     if job_id:
