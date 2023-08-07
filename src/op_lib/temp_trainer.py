@@ -56,10 +56,11 @@ class TempTrainer:
             print('epoch ', epoch)
             self.train_step(epoch)
             self.val_step(epoch)
-            self.lr_scheduler.step()
 
-    def _forward_int(self, temp, vel):
+    def _forward_int(self, coords, temp, vel):
         input = torch.cat((temp, vel), dim=1)
+        if self.cfg.train.use_coords:
+            input = torch.cat((coords, input), dim=1)
         pred = self.model(input)
         return pred
         # TODO: account for different timesteps of training data
@@ -70,28 +71,30 @@ class TempTrainer:
         #sol = last_temp_input + timesteps * pred
         #return sol
 
-    def push_forward_trick(self, temp, vel):
+    def push_forward_trick(self, coords, temp, vel):
         #with torch.no_grad():
         #    for idx in range(self.push_forward_steps - 1):
         #        pred = self._forward_int(temp, vel)
         #        temp = torch.roll(temp, -self.future_window, dims=1)
-        pred = self._forward_int(temp, vel)
+        pred = self._forward_int(coords, temp, vel)
         return pred
 
     def train_step(self, epoch):
         self.model.train()
 
         for iter, (coords, temp, vel, label) in enumerate(self.train_dataloader):
+            coords = coords.to(self.local_rank).float()
             temp = temp.to(self.local_rank).float()
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
             
-            pred = self.push_forward_trick(temp, vel)
+            pred = self.push_forward_trick(coords, temp, vel)
             #loss = F.mse_loss(pred, label)
             loss = self.loss(pred, label)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            self.lr_scheduler.step()
             
             print(f'train loss: {loss}')
             global_iter = epoch * len(self.train_dataloader) + iter
@@ -101,11 +104,12 @@ class TempTrainer:
     def val_step(self, epoch):
         self.model.eval()
         for iter, (coords, temp, vel, label) in enumerate(self.val_dataloader):
+            coords = coords.to(self.local_rank).float()
             temp = temp.to(self.local_rank).float()
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
             with torch.no_grad():
-                pred = self._forward_int(temp, vel)
+                pred = self._forward_int(coords, temp, vel)
                 temp_loss = F.mse_loss(pred, label)
                 loss = temp_loss
             print(f'val loss: {loss}')
@@ -123,11 +127,12 @@ class TempTrainer:
             start = time.time()
             for timestep in range(0, time_lim, self.future_window):
                 coords, temp, vel, label = dataset[timestep]
+                coords = coords.to(self.local_rank).float().unsqueeze(0)
                 temp = temp.to(self.local_rank).float().unsqueeze(0)
                 vel = vel.to(self.local_rank).float().unsqueeze(0)
                 label = label.to(self.local_rank).float()
                 with torch.no_grad():
-                    pred = self._forward_int(temp, vel)
+                    pred = self._forward_int(coords, temp, vel)
                     temp = F.hardtanh(pred, min_val=-1, max_val=1).squeeze(0)
                     dataset.write_temp(temp.permute((1, 2, 0)), timestep)
                     temps.append(temp.detach().cpu())

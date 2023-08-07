@@ -50,10 +50,12 @@ def build_datasets(cfg):
     time_window = cfg.experiment.train.time_window
     future_window = cfg.experiment.train.future_window
     push_forward_steps = cfg.experiment.train.push_forward_steps 
+    use_coords = cfg.experiment.train.use_coords
 
     # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
         DatasetClass(p,
+                     use_coords=use_coords,
                      transform=cfg.dataset.transform,
                      time_window=time_window,
                      future_window=future_window,
@@ -64,6 +66,7 @@ def build_datasets(cfg):
     # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
         DatasetClass(p,
+                     use_coords=use_coords,
                      time_window=time_window,
                      future_window=future_window) for p in cfg.dataset.val_paths])
     val_dataset.normalize_temp_(train_max_temp)
@@ -75,16 +78,17 @@ def build_datasets(cfg):
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
     if cfg.experiment.distributed:
-        SamplerClass = DistributedSampler
+        train_sampler = DistributedSampler(dataset=train_dataset,
+                                           shuffle=cfg.experiment.train.shuffle_data)
+        val_sampler = DistributedSampler(dataset=val_dataset,
+                                         shuffle=False)
     else:
-        SamplerClass = Sampler
-    train_sampler = SamplerClass(dataset=train_dataset,
-                                 shuffle=cfg.experiment.train.shuffle_data)
-    val_sampler = SamplerClass(dataset=val_dataset,
-                               shuffle=False)
-        
+        train_sampler, val_sampler = None, None
+    
+    train_shuffle = cfg.experiment.train.shuffle_data and (train_sampler is None)
     train_dataloader = DataLoader(train_dataset, 
                                   sampler=train_sampler,
+                                  shuffle=train_shuffle,
                                   batch_size=cfg.experiment.train.batch_size,
                                   num_workers=1,
                                   pin_memory=True)
@@ -108,7 +112,8 @@ def train_app(cfg):
     assert cfg.experiment.train.future_window > 0
     assert cfg.experiment.train.push_forward_steps > 0
 
-    dist_utils.initialize('nccl')
+    if cfg.experiment.distributed:
+        dist_utils.initialize('nccl')
 
     job_id = os.getenv('SLURM_JOB_ID')
     if job_id:
@@ -140,21 +145,20 @@ def train_app(cfg):
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=exp.optimizer.initial_lr,
                                   weight_decay=exp.optimizer.weight_decay)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                   step_size=exp.lr_scheduler.patience,
-                                                   gamma=exp.lr_scheduler.factor)
+    #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
+    #                                               step_size=exp.lr_scheduler.patience,
+    #                                               gamma=exp.lr_scheduler.factor)
 
 
-
-    #total_iters = exp.train.max_epochs * len(train_dataloader)
-    #warmup_iters = max(1, int(dist_utils.world_size() * 0.01 * total_iters))
-    #warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
-    #warm_iters = total_iters - warmup_iters
-    #warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
-    #                                                      total_iters=warm_iters)
+    total_iters = exp.train.max_epochs * len(train_dataloader)
+    warmup_iters = max(1, int(dist_utils.world_size() * 0.01 * total_iters))
+    warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
+    warm_iters = total_iters - warmup_iters
+    warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
+                                                          total_iters=warm_iters)
     # SequentialLR produces a deprecation warning when calling sub-schedulers.
     # https://github.com/pytorch/pytorch/issues/76113
-    #lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
+    lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
 
     TrainerClass = trainer_map[exp.torch_dataset_name]
     trainer = TrainerClass(model,
