@@ -141,9 +141,10 @@ class TempInputDataset(HDF5Dataset):
     past predictions for temperature and using them to make future
     predictions.
     """
-    def __init__(self, filename, transform=False, time_window=1, future_window=1, push_forward_steps=1):
+    def __init__(self, filename, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
         super().__init__(filename, transform, time_window, future_window, push_forward_steps)
-        self.in_channels = 3 * self.time_window + 2 * self.future_window
+        coords_dim = 2 if use_coords else 0
+        self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
         self.out_channels = self.future_window
 
     def __getitem__(self, timestep):
