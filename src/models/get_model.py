@@ -1,5 +1,7 @@
 import os
 from neuralop.models import FNO, UNO
+from .factorized_fno.factorized_fno import FNOFactorized2DBlock 
+from .gefno.gfno import GFNO2d
 from .pdebench.unet import UNet2d 
 from .pdearena.unet import Unet, FourierUnet
 
@@ -14,12 +16,18 @@ _UFNET = 'ufnet'
 _FNO = 'fno'
 _UNO = 'uno'
 
+_FFNO = 'factorized_fno'
+
+_GFNO = 'gfno'
+
 _MODEL_LIST = [
     _UNET2D,
     _UNET_MOD_ATTN,
     _UFNET,
     _FNO,
     _UNO,
+    _FFNO,
+    _GFNO
 ]
 
 def get_model(model_name, in_channels, out_channels, exp):
@@ -64,6 +72,20 @@ def get_model(model_name, in_channels, out_channels, exp):
                     uno_scalings=[[1,1],[0.5,0.5],[1,1],[1,1],[2,2]],
                     n_layers=exp.model.n_layers,
                     domain_padding=exp.model.domain_padding)
+    elif model_name == _FFNO:
+        model = FNOFactorized2DBlock(in_channels=in_channels,
+                                     out_channels=out_channels,
+                                     modes=exp.model.modes,
+                                     width=exp.model.width,
+                                     dropout=exp.model.dropout,
+                                     n_layers=exp.model.n_layers,
+                                     )
+    elif model_name == _GFNO:
+        model = GFNO2d(in_channels=in_channels,
+                       out_channels=out_channels,
+                       modes=exp.model.modes,
+                       width=exp.model.width,
+                       reflection=exp.model.reflection) 
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()

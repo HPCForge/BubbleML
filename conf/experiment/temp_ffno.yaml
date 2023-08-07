@@ -9,12 +9,16 @@ train:
   time_window: 3
   future_window: 1
   push_forward_steps: 1
-  use_coords: False
+  use_coords: True
 
 model:
-  model_name: unet2d
-  init_features: 64
-  
+  model_name: factorized_fno
+  modes: 16
+  width: 256
+  dropout: 0.0
+  n_layers: 4
+  layer_norm: False
+
 optimizer:
   initial_lr: 1e-3
   weight_decay: 0.01
