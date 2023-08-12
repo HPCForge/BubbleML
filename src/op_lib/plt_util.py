@@ -1,7 +1,9 @@
+import os
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import torch
+from pathlib import Path
 
 def temp_cmap():
     temp_ranges = [0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.134, 0.167,
@@ -58,10 +60,13 @@ def plt_temp(temps, labels, model_name):
                    ticks=[0, 0.2, 0.6, 0.9],
                    fraction=0.04,
                    pad=0.02)
-
         f.set_size_inches(w=6, h=3)
-        plt.savefig(f'test_im/temp/{i_str}.png',
-                    dpi=600,
+
+        job_id = os.environ['SLURM_JOB_ID']
+        im_path = Path(f'test_im/temp/{job_id}/')
+        im_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(f'{str(im_path)}/{i_str}.png',
+                    dpi=400,
                     bbox_inches='tight',
                     transparent=True)
         plt.close()
@@ -77,22 +82,22 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
     for i in range(len(vel_preds)):
         i_str = str(i).zfill(3)
 
-        def plt_temp_arr(f, ax, arr, mm, title):
-            cm_object = ax.imshow(arr, vmin=min_mag, vmax=max_mag, cmap='viridis')
+        def plt_temp_arr(f, ax, arr, title):
+            cm_object = ax.imshow(arr, vmin=0, vmax=0.3, cmap='jet')
             ax.set_title(title)
             ax.axis('off')
             return cm_object
 
-        f, axarr = plt.subplots(1, 3, layout="constrained")
+        f, axarr = plt.subplots(1, 2, layout="constrained")
         pred_mag = vel_preds[i]
         label_mag = vel_labels[i] 
 
-        cm_object = plt_temp_arr(f, axarr[0], np.flipud(label_mag), max_mag, 'Ground Truth')
-        plt_temp_arr(f, axarr[1], np.flipud(pred_mag), max_mag, model_name)
+        cm_object = plt_temp_arr(f, axarr[0], np.flipud(label_mag), 'Ground Truth')
+        plt_temp_arr(f, axarr[1], np.flipud(pred_mag), model_name)
         f.colorbar(cm_object, ax=axarr[1], fraction=0.05)
 
-        cm_object = plt_temp_arr(f, axarr[2], np.flipud(np.abs(label_mag - pred_mag)), 1, 'Absolute Error')
-        f.colorbar(cm_object, ax=axarr[2], fraction=0.05)
+        #cm_object = plt_temp_arr(f, axarr[2], np.flipud(np.abs(label_mag - pred_mag)), 1, 'Absolute Error')
+        #f.colorbar(cm_object, ax=axarr[2], fraction=0.05)
 
         #vx_pred, vx_label = velx_preds[i], velx_labels[i]
         #vy_pred, vy_label = vely_preds[i], vely_labels[i]
@@ -102,5 +107,8 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
         #cm_object = plt_temp_arr(f, axarr[1, 1], np.flipud(n), 1, 'L2 Error')
         #f.colorbar(cm_object, ax=axarr[1, 1], fraction=0.05)
 
-        plt.savefig(f'test_im/vel/{i_str}.png', dpi=500)
+        job_id = os.environ['SLURM_JOB_ID']
+        im_path = Path(f'test_im/vel/{job_id}/')
+        im_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(f'{str(im_path)}/{i_str}.png', dpi=500)
         plt.close()

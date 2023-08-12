@@ -16,11 +16,15 @@ import time
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+from op_lib.disk_hdf5_dataset import (
+        DiskTempVelDataset
+)
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
         TempVelDataset
 )
+
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
@@ -31,7 +35,7 @@ from models.get_model import get_model
 
 torch_dataset_map = {
     'temp_input_dataset': TempInputDataset,
-    'vel_dataset': TempVelDataset
+    'vel_dataset': (DiskTempVelDataset, TempVelDataset)
 }
 
 trainer_map = {
@@ -54,7 +58,7 @@ def build_datasets(cfg):
 
     # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
-        DatasetClass(p,
+        DatasetClass[0](p,
                      use_coords=use_coords,
                      transform=cfg.dataset.transform,
                      time_window=time_window,
@@ -65,7 +69,7 @@ def build_datasets(cfg):
 
     # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
-        DatasetClass(p,
+        DatasetClass[1](p,
                      use_coords=use_coords,
                      time_window=time_window,
                      future_window=future_window) for p in cfg.dataset.val_paths])
@@ -90,16 +94,20 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                   sampler=train_sampler,
                                   shuffle=train_shuffle,
                                   batch_size=cfg.experiment.train.batch_size,
-                                  num_workers=1,
-                                  pin_memory=True)
+                                  num_workers=2,
+                                  pin_memory=True,
+                                  prefetch_factor=4)
     val_dataloader = DataLoader(val_dataset, 
                                 sampler=val_sampler,
                                 batch_size=cfg.experiment.train.batch_size,
                                 shuffle=False,
-                                num_workers=1,
-                                pin_memory=True)
+                                num_workers=2,
+                                pin_memory=True,
+                                prefetch_factor=4)
     return train_dataloader, val_dataloader
 
+def nparams(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 @hydra.main(version_base=None, config_path='../conf', config_name='default')
 def train_app(cfg):
@@ -126,10 +134,11 @@ def train_app(cfg):
     train_dataset, val_dataset = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
-    tail = cfg.dataset.val_paths[0].split('-')[-1]
-    print(tail, tail[:-5])
-    val_variable = int(tail[:-5])
-    print('T_wall of val sim: ', val_variable)
+    #tail = cfg.dataset.val_paths[0].split('-')[-1]
+    #print(tail, tail[:-5])
+    #val_variable = int(tail[:-5])
+    #print('T_wall of val sim: ', val_variable)
+    val_variable = 0
 
     exp = cfg.experiment
     model_name = exp.model.model_name.lower()
@@ -141,21 +150,22 @@ def train_app(cfg):
     if cfg.model_checkpoint:
         model.load_state_dict(torch.load(cfg.model_checkpoint))
     print(model)
+    np = nparams(model)
+    print(f'Model has {np} parameters')
 
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=exp.optimizer.initial_lr,
                                   weight_decay=exp.optimizer.weight_decay)
-    #lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-    #                                               step_size=exp.lr_scheduler.patience,
-    #                                               gamma=exp.lr_scheduler.factor)
-
 
     total_iters = exp.train.max_epochs * len(train_dataloader)
-    warmup_iters = max(1, int(dist_utils.world_size() * 0.01 * total_iters))
+    warmup_iters = max(1, int(dist_utils.world_size() * 0.03 * total_iters))
     warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
     warm_iters = total_iters - warmup_iters
     warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
                                                           total_iters=warm_iters)
+    #warm_schedule = torch.optim.lr_scheduler.StepLR(optimizer,
+    #                                                step_size=exp.lr_scheduler.patience,
+    #                                                gamma=exp.lr_scheduler.factor)
     # SequentialLR produces a deprecation warning when calling sub-schedulers.
     # https://github.com/pytorch/pytorch/issues/76113
     lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
@@ -176,14 +186,23 @@ def train_app(cfg):
     if cfg.train and not cfg.model_checkpoint:
         trainer.train(exp.train.max_epochs)
         timestamp = int(time.time())
-        ckpt_file = f'{model.__class__.__name__}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
+        if cfg.experiment.distributed:
+            # if using DDP, we need to get the wrapped module
+            # so the file has the proper name.
+            model_name = model.module.__class__.__name__
+        else:
+            model_name = model.__class__.__name__
+        ckpt_file = f'{model_name}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
         ckpt_root = Path.home() / f'{log_dir}/{cfg.dataset.name}'
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
-        torch.save(model.state_dict(), f'{ckpt_path}')
+        if cfg.experiment.distributed:
+            torch.save(model.module.state_dict(), f'{ckpt_path}')
+        else:
+            torch.save(model.state_dict(), f'{fkpt_path}')
 
-    if cfg.test:
+    if cfg.test and dist_utils.is_leader_process():
         trainer.test(val_dataset.datasets[0])
 
 if __name__ == '__main__':

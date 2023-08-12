@@ -76,6 +76,8 @@ class TempTrainer:
         #    for idx in range(self.push_forward_steps - 1):
         #        pred = self._forward_int(temp, vel)
         #        temp = torch.roll(temp, -self.future_window, dims=1)
+        temp += torch.empty_like(temp).normal_(0, 0.01)
+        vel += torch.empty_like(vel).normal_(0, 0.01)
         pred = self._forward_int(coords, temp, vel)
         return pred
 

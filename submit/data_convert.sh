@@ -2,7 +2,7 @@
 #SBATCH -p standard
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=40
 #SBATCH --time=4:00:00
 
 module load anaconda/2022.05
