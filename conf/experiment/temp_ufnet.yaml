@@ -13,8 +13,8 @@ train:
 model:
   model_name: ufnet
   hidden_channels: 64
-  modes1: 16
-  modes2: 16
+  modes1: 8
+  modes2: 8
   n_fourier_layers: 2
 
 optimizer:
