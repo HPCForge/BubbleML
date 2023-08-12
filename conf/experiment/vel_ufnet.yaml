@@ -1,23 +1,26 @@
-torch_dataset_name: temp_input_dataset 
+torch_dataset_name: vel_dataset 
 
 distributed: True
 
 train:
   max_epochs: 500 
-  batch_size: 8
+  batch_size: 4
   shuffle_data: True
-  time_window: 3
-  future_window: 1
+  time_window: 5
+  future_window: 5
   push_forward_steps: 1
   use_coords: False
 
 model:
-  model_name: unet_mod_attn
-  hidden_channels: 64
-  
+  model_name: ufnet
+  hidden_channels: 64 
+  modes1: 8
+  modes2: 8
+  n_fourier_layers: 2
+
 optimizer:
   initial_lr: 1e-3
-  weight_decay: 0.01
+  weight_decay: 0.001
 
 lr_scheduler:
   factor: 0.5

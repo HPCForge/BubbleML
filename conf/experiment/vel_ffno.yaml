@@ -1,0 +1,30 @@
+torch_dataset_name: vel_dataset 
+
+distributed: True
+
+train:
+  max_epochs: 500 
+  batch_size: 4
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 2
+  use_coords: True
+  downsample: True
+
+model:
+  model_name: factorized_fno
+  modes: 32
+  width: 256
+  dropout: 0.0
+  n_layers: 4
+  layer_norm: True
+  
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 0.01
+
+lr_scheduler:
+  factor: 0.5
+  patience: 100
+  min_lr: 1e-8
