@@ -48,7 +48,6 @@ class PushVelTrainer:
         self.max_push_forward_steps = max_push_forward_steps
         self.future_window = future_window
         self.use_coords = cfg.train.use_coords
-        self.downsample = cfg.train.downsample
 
     def train(self, max_epochs):
         for epoch in range(max_epochs):
@@ -63,18 +62,21 @@ class PushVelTrainer:
             input = torch.cat((coords, input), dim=1)
         pred = self.model(input)
 
-        #timesteps = (torch.arange(self.future_window) + 1).cuda().unsqueeze(-1).unsqueeze(-1)
+        timesteps = (torch.arange(self.future_window) + 1).cuda().unsqueeze(-1).unsqueeze(-1).float()
+        timesteps /= 10 # timestep size is 0.1 for vel
+        timesteps = timesteps.to(pred.device)
 
-        #d_temp = pred[:, :self.future_window]
-        #last_temp_input = temp[:, -1].unsqueeze(1)
-        #temp_pred = last_temp_input + timesteps * d_temp
+        d_temp = pred[:, :self.future_window]
+        last_temp_input = temp[:, -1].unsqueeze(1)
+        temp_pred = last_temp_input + timesteps * d_temp
 
-        #d_vel = pred[:, self.future_window:]
-        #last_vel_input = torch.repeat_interleave(vel[:, -2:], self.future_window, dim=1)
-        #timesteps_interleave = torch.repeat_interleave(timesteps, 2, dim=0) 
-        #vel_pred = last_vel_input + timesteps_interleave * d_vel
-        temp_pred = pred[:, :self.future_window]
-        vel_pred = pred[:, self.future_window:]
+        d_vel = pred[:, self.future_window:]
+        last_vel_input = vel[:, -2:].repeat(1, self.future_window, 1, 1)
+        timesteps_interleave = torch.repeat_interleave(timesteps, 2, dim=0) 
+        vel_pred = last_vel_input + timesteps_interleave * d_vel
+
+        #temp_pred = pred[:, :self.future_window]
+        #vel_pred = pred[:, self.future_window:]
 
         return temp_pred, vel_pred
 
@@ -88,29 +90,32 @@ class PushVelTrainer:
         return dfun[:, idx]
 
     def push_forward_trick(self, coords, temp, vel, dfun, push_forward_steps):
+        # TODO: clean this up...
         coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
         assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
-        if self.downsample:
-            coords_input, temp_input, vel_input, dfun_input = self.downsample_domain(coords_input, temp_input, vel_input, dfun_input)
+        coords_input, temp_input, vel_input, dfun_input = \
+                self.downsample_domain(coords_input, temp_input, vel_input, dfun_input)
         with torch.no_grad():
             for idx in range(push_forward_steps - 1):
                 temp_input, vel_input = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
-                dfun_input = self.downsample_domain(self._index_dfun(idx + 1, dfun))[0]
-        if push_forward_steps == 1:
+                dfun_input = self._index_dfun(idx + 1, dfun)
+                dfun_input = self.downsample_domain(dfun)[0]
+        if self.cfg.train.noise and push_forward_steps == 1:
             temp_input += torch.empty_like(temp_input).normal_(0, 0.01)
             vel_input += torch.empty_like(vel_input).normal_(0, 0.01)
         temp_pred, vel_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
         return temp_pred, vel_pred
 
     def downsample_domain(self, *args):
-        assert self.downsample, 'PushVelTrainier.downsample incorrectly called'
-        return tuple([F.interpolate(im, size=(128, 128)) for im in args])
+        downsample_factor = self.cfg.train.downsample_factor
+        assert downsample_factor > 0 and downsample_factor <= 1.0
+        return tuple([F.interpolate(im, scale_factor=downsample_factor) for im in args])
 
     def train_step(self, epoch):
         self.model.train()
 
         # warmup before doing push forward trick
-        push_forward_steps = 1 if epoch < 4 else self.max_push_forward_steps
+        push_forward_steps = 1 if epoch < 3 else self.max_push_forward_steps
 
         for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.train_dataloader):
             coords = coords.to(local_rank()).float()
@@ -125,8 +130,7 @@ class PushVelTrainer:
             idx = (push_forward_steps - 1)
             vel_label = vel_label[:, idx].to(local_rank()).float()
 
-            if self.downsample:
-                temp_label, vel_label = self.downsample_domain(temp_label, vel_label)
+            temp_label, vel_label = self.downsample_domain(temp_label, vel_label)
 
             temp_loss = self.loss(temp_pred, temp_label)
             vel_loss = self.loss(vel_pred, vel_label)

@@ -4,20 +4,21 @@ distributed: True
 
 train:
   max_epochs: 500 
-  batch_size: 4
+  batch_size: 8
   shuffle_data: True
   time_window: 5
   future_window: 5
   push_forward_steps: 2
   use_coords: True
-  downsample: True
+  noise: True
+  downsample_factor: 0.5
 
 model:
   model_name: factorized_fno
-  modes: 32
-  width: 256
+  modes: 64
+  width: 128
   dropout: 0.0
-  n_layers: 4
+  n_layers: 8
   layer_norm: True
   
 optimizer:

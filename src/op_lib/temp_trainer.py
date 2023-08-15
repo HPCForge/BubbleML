@@ -67,19 +67,22 @@ class TempTrainer:
         #  - u_k+l = u_k + (t_k+l - t_k)d_l
         # at the moment, time discretization is 1, so t_k+l - t_k is just l + 1
         #timesteps = (torch.arange(self.future_window) + 1).to(pred.device).unsqueeze(-1).unsqueeze(-1)
+        #timesteps = timesteps.float()
         #last_temp_input = temp[:, -1].unsqueeze(1).to(pred.device)
         #sol = last_temp_input + timesteps * pred
         #return sol
 
     def push_forward_trick(self, coords, temp, vel):
-        #with torch.no_grad():
-        #    for idx in range(self.push_forward_steps - 1):
-        #        pred = self._forward_int(temp, vel)
-        #        temp = torch.roll(temp, -self.future_window, dims=1)
-        temp += torch.empty_like(temp).normal_(0, 0.01)
-        vel += torch.empty_like(vel).normal_(0, 0.01)
+        if self.cfg.train.noise:
+            temp += torch.empty_like(temp).normal_(0, 0.01)
+            vel += torch.empty_like(vel).normal_(0, 0.01)
         pred = self._forward_int(coords, temp, vel)
         return pred
+
+    def downsample_domain(self, *args):
+        downsample_factor = self.cfg.train.downsample_factor
+        assert downsample_factor > 0 and downsample_factor <= 1.0
+        return tuple([F.interpolate(im, scale_factor=downsample_factor) for im in args])
 
     def train_step(self, epoch):
         self.model.train()
@@ -89,9 +92,10 @@ class TempTrainer:
             temp = temp.to(self.local_rank).float()
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
-            
+            coords, temp, vel, label = self.downsample_domain(coords, temp, vel, label)
+
             pred = self.push_forward_trick(coords, temp, vel)
-            #loss = F.mse_loss(pred, label)
+
             loss = self.loss(pred, label)
             self.optimizer.zero_grad()
             loss.backward()
@@ -135,16 +139,20 @@ class TempTrainer:
                 label = label.to(self.local_rank).float()
                 with torch.no_grad():
                     pred = self._forward_int(coords, temp, vel)
-                    temp = F.hardtanh(pred, min_val=-1, max_val=1).squeeze(0)
-                    dataset.write_temp(temp.permute((1, 2, 0)), timestep)
+                    temp = F.hardtanh(pred.squeeze(0), -1, 1)
+                    dataset.write_temp(temp, timestep)
                     temps.append(temp.detach().cpu())
                     labels.append(label.detach().cpu())
             dur = time.time() - start
             print(f'rollout time {dur} (s)')
 
+
             temps = torch.cat(temps, dim=0)
             labels = torch.cat(labels, dim=0)
-            dfun = dataset.get_dfun().permute((2, 0, 1))[0:time_lim:self.future_window]
+            dfun = dataset.get_dfun()[:temps.size(0)]
+
+            print(temps.max(), temps.min())
+            print(labels.max(), labels.min())
 
             metrics = compute_metrics(temps, labels, dfun)
             print(metrics)

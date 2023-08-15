@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH -A amowli_lab_gpu
-#SBATCH -p gpu
+#SBATCH -p free-gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A30:1
+#SBATCH --gres=gpu:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
-#SBATCH --time=48:00:00
+#SBATCH --mem-per-cpu=4G
+#SBATCH --time=0:10:00
 
 # One node needs to be used as the "host" for the rendezvuoz
 # system used by torch. This just gets a list of the hostnames
@@ -17,22 +17,7 @@ module load anaconda/2022.05
 . ~/.mycondaconf
 conda activate bubble-sciml
 
-#DATASET=PB_SubCooled
-#DATASET=PB_WallSuperHeat
-DATASET=PB_Gravity
-#DATASET=FB_Gravity
-#DATASET=FB_InletVel
-
-#EXPERIMENT=temp_unet2d
-#EXPERIMENT=temp_unet_mod_attn
-#EXPERIMENT=temp_ufnet
-#EXPERIMENT=temp_fno
-#EXPERIMENT=temp_uno
-EXPERIMENT=temp_ffno
-
-# GFNO requires multi-gpu...
-# Do this last
-#EXPERIMENT=temp_gfno
+export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
 #srun torchrun \
 #    --nnodes $NNODES \
@@ -45,7 +30,10 @@ EXPERIMENT=temp_ffno
 #    --tee 3 \
 python src/train.py \
 	data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
-	log_dir=/pub/afeeney/train_log_dir \
-	dataset=$DATASET \
-	experiment=$EXPERIMENT \
+	log_dir=/pub/afeeney/train_log_dir/ \
+	dataset=PB_Gravity\
 	experiment.distributed=False \
+	experiment=temp_unet2d \
+	experiment.train.max_epochs=3 \
+	experiment.lr_scheduler.patience=50
+	model_checkpoint=/pub/afeeney/train_log_dir/23370440/pb_gravity/
