@@ -252,7 +252,7 @@ class GFNO2d(nn.Module):
 
     def forward(self, x):
         r"""
-        (Arthur:) The original expectation expects the channels to be last.
+        (Arthur:) The original code expects the channels to be last.
         They also use a grid utility to get xy-coordinates. This
         has been modified to remove their grid utility (I pass in 
         the xy-coordinates with the input). This then removes

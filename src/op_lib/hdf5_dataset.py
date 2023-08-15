@@ -9,7 +9,6 @@ from pathlib import Path
 # The early timesteps of a simulation may be "unsteady"
 # We say that the simulation enters a steady state around
 # timestep 30.
-STEADY_TIME = 300
 
 class HDF5ConcatDataset(ConcatDataset):
     def __init__(self, datasets):
@@ -39,21 +38,28 @@ class HDF5ConcatDataset(ConcatDataset):
         return absmax_vel
 
 class HDF5Dataset(Dataset):
-    def __init__(self, filename, transform=False, time_window=1, future_window=1, push_forward_steps=1):
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
         super().__init__()
         assert time_window > 0, 'HDF5Dataset.__init__():time window should be positive'
+        self.steady_time = steady_time
         self.transform = transform
         self.time_window = time_window
         self.future_window = future_window
         self.push_forward_steps = push_forward_steps
         self._data = {}
         with h5py.File(filename, 'r') as f:
-            self._data['temp'] = torch.nan_to_num(torch.from_numpy(f['temperature'][STEADY_TIME:]))
-            self._data['velx'] = torch.nan_to_num(torch.from_numpy(f['velx'][STEADY_TIME:]))
-            self._data['vely'] = torch.nan_to_num(torch.from_numpy(f['vely'][STEADY_TIME:]))
-            self._data['dfun'] = torch.nan_to_num(torch.from_numpy(f['dfun'][STEADY_TIME:]))
-            self._data['x'] = torch.from_numpy(f['x'][STEADY_TIME:])
-            self._data['y'] = torch.from_numpy(f['y'][STEADY_TIME:])
+            self._data['temp'] = torch.nan_to_num(torch.from_numpy(f['temperature'][:][self.steady_time:]))
+            self._data['velx'] = torch.nan_to_num(torch.from_numpy(f['velx'][:][self.steady_time:]))
+            self._data['vely'] = torch.nan_to_num(torch.from_numpy(f['vely'][:][self.steady_time:]))
+            self._data['dfun'] = torch.nan_to_num(torch.from_numpy(f['dfun'][:][self.steady_time:]))
+            self._data['x'] = torch.from_numpy(f['x'][:][self.steady_time:])
+            self._data['y'] = torch.from_numpy(f['y'][:][self.steady_time:])
 
         self._redim_temp(filename)
 
@@ -144,8 +150,15 @@ class TempInputDataset(HDF5Dataset):
     past predictions for temperature and using them to make future
     predictions.
     """
-    def __init__(self, filename, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
-        super().__init__(filename, transform, time_window, future_window, push_forward_steps)
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
         self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
         self.out_channels = self.future_window
@@ -170,8 +183,15 @@ class TempVelDataset(HDF5Dataset):
     Velocities and temperatures are unknown. The model writes past
     predictions to reuse for future predictions.
     """
-    def __init__(self, filename, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
-        super().__init__(filename, transform, time_window, future_window, push_forward_steps)
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
         self.temp_channels = self.time_window
         self.vel_channels = self.time_window * 2

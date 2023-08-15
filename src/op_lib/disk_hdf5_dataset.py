@@ -8,33 +8,25 @@ from torchvision.transforms import Resize
 import torchvision.transforms.functional as TF
 from pathlib import Path
 
-# The early timesteps of a simulation may be "unsteady"
-# We say that the simulation enters a steady state around
-# timestep 30.
-STEADY_TIME = 300
-
 class DiskHDF5Dataset(Dataset):
-    def __init__(self, filename, transform=False, time_window=1, future_window=1, push_forward_steps=1):
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
         super().__init__()
         assert time_window > 0, 'HDF5Dataset.__init__():time window should be positive'
+        self.steady_time = steady_time
         self.transform = transform
         self.time_window = time_window
         self.future_window = future_window
         self.push_forward_steps = push_forward_steps
         
-        # copy the dataset into /tmp because
-        # 1. re-dimensionalization and normalization require modifying in-place
-        # 2. during rollouts, we have to write data back in, so validation dataset
-        # should just do normalization and such before hand so I don't have to copy...
-        # TODO: validation dataset is probably always small enough to fit in CPU mem...
         self._data = h5py.File(filename, 'r')
 
-        #with h5py.File(filename, 'r') as src_file:
-        #    self._data = h5py.File(filename + '_work', 'w')
-        #    for obj in src_file.keys():
-        #        self._data.create_dataset(obj, data=src_file[obj][STEADY_TIME:])
-
-        # these values are used to 
+        # these values are used to redimensionalize and then normalize data 
         self.wall_temp = self._get_wall_temp(filename)
         self.temp_scale = None
         self.vel_scale = None
@@ -45,14 +37,14 @@ class DiskHDF5Dataset(Dataset):
         # the first few frames.
         # we may also predict several frames in the future, so we
         # can't include those in length
-        total_size = self._data['temperature'].shape[0] - STEADY_TIME
+        total_size = self._data['temperature'].shape[0] - self.steady_time
         return total_size - self.time_window - (self.future_window * self.push_forward_steps - 1) 
 
     def _index_data(self, key, timestep):
-        return self._data[key][STEADY_TIME + timestep]
+        return self._data[key][self.steady_time + timestep]
 
     def _get_data(self, key):
-        return self._data[key][STEADY_TIME:]
+        return self._data[key][self.steady_time:]
 
     def _get_wall_temp(self, filename):
         r"""
@@ -65,8 +57,9 @@ class DiskHDF5Dataset(Dataset):
         filename = Path(filename).stem
         wall_temp = None
         TWALL = 'Twall-'
-        assert TWALL in filename, f'Expected a temp dataset with {TWALL} in filename'
-        print(float(filename[len(TWALL):]))
+        if TWALL not in filename:
+            # if temperature doesn't vary, no need to redim/normalize it
+            return 1
         return float(filename[len(TWALL):])
 
     def absmax_temp(self):
@@ -132,8 +125,8 @@ class DiskTempInputDataset(DiskHDF5Dataset):
     past predictions for temperature and using them to make future
     predictions.
     """
-    def __init__(self, filename, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
-        super().__init__(filename, transform, time_window, future_window, push_forward_steps)
+    def __init__(self, filename, steady_time, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
         self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
         self.out_channels = self.future_window
@@ -146,20 +139,21 @@ class DiskTempInputDataset(DiskHDF5Dataset):
         label = torch.stack([self._get_temp(base_time + k) for k in range(self.future_window)], dim=0)
         return (coords, *self._transform(temps, vel, label))
 
-    def write_temp(self, temp, timestep):
-        if temp.ndim == 2:
-            temp.unsqueeze_(-1)
-        base_time = timestep + self.time_window
-        self._data['temperature'][base_time:base_time + self.future_window] = temp
-
 class DiskTempVelDataset(DiskHDF5Dataset):
     r"""
     This is a dataset for predicting both temperature and velocity.
     Velocities and temperatures are unknown. The model writes past
     predictions to reuse for future predictions.
     """
-    def __init__(self, filename, use_coords, transform=False, time_window=1, future_window=1, push_forward_steps=1):
-        super().__init__(filename, transform, time_window, future_window, push_forward_steps)
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
         self.temp_channels = self.time_window
         self.vel_channels = self.time_window * 2

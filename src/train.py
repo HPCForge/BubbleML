@@ -12,11 +12,13 @@ import numpy as np
 from pathlib import Path
 import os
 import time
+import math
 
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from op_lib.disk_hdf5_dataset import (
+        DiskTempInputDataset,
         DiskTempVelDataset
 )
 from op_lib.hdf5_dataset import (
@@ -34,7 +36,7 @@ from models.get_model import get_model
 
 
 torch_dataset_map = {
-    'temp_input_dataset': TempInputDataset,
+    'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
     'vel_dataset': (DiskTempVelDataset, TempVelDataset)
 }
 
@@ -55,24 +57,27 @@ def build_datasets(cfg):
     future_window = cfg.experiment.train.future_window
     push_forward_steps = cfg.experiment.train.push_forward_steps 
     use_coords = cfg.experiment.train.use_coords
+    steady_time = cfg.dataset.steady_time
 
     # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
         DatasetClass[0](p,
-                     use_coords=use_coords,
-                     transform=cfg.dataset.transform,
-                     time_window=time_window,
-                     future_window=future_window,
-                     push_forward_steps=push_forward_steps) for p in cfg.dataset.train_paths])
+                        steady_time=cfg.dataset.steady_time,
+                        use_coords=use_coords,
+                        transform=cfg.dataset.transform,
+                        time_window=time_window,
+                        future_window=future_window,
+                        push_forward_steps=push_forward_steps) for p in cfg.dataset.train_paths])
     train_max_temp = train_dataset.normalize_temp_()
     train_max_vel = train_dataset.normalize_vel_()
 
     # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
         DatasetClass[1](p,
-                     use_coords=use_coords,
-                     time_window=time_window,
-                     future_window=future_window) for p in cfg.dataset.val_paths])
+                        steady_time=cfg.dataset.steady_time,
+                        use_coords=use_coords,
+                        time_window=time_window,
+                        future_window=future_window) for p in cfg.dataset.val_paths])
     val_dataset.normalize_temp_(train_max_temp)
     val_dataset.normalize_vel_(train_max_vel)
 
@@ -154,18 +159,18 @@ def train_app(cfg):
     print(f'Model has {np} parameters')
 
     optimizer = torch.optim.AdamW(model.parameters(),
-                                  lr=exp.optimizer.initial_lr,
+                                  lr=dist_utils.world_size() * exp.optimizer.initial_lr,
                                   weight_decay=exp.optimizer.weight_decay)
 
     total_iters = exp.train.max_epochs * len(train_dataloader)
-    warmup_iters = max(1, int(dist_utils.world_size() * 0.03 * total_iters))
+    warmup_iters = max(1, int(math.sqrt(dist_utils.world_size()) * 0.03 * total_iters))
     warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
     warm_iters = total_iters - warmup_iters
-    warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
-                                                          total_iters=warm_iters)
-    #warm_schedule = torch.optim.lr_scheduler.StepLR(optimizer,
-    #                                                step_size=exp.lr_scheduler.patience,
-    #                                                gamma=exp.lr_scheduler.factor)
+    #warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
+    #                                                      total_iters=warm_iters)
+    warm_schedule = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                    step_size=exp.lr_scheduler.patience * len(train_dataloader),
+                                                    gamma=exp.lr_scheduler.factor)
     # SequentialLR produces a deprecation warning when calling sub-schedulers.
     # https://github.com/pytorch/pytorch/issues/76113
     lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
@@ -187,8 +192,6 @@ def train_app(cfg):
         trainer.train(exp.train.max_epochs)
         timestamp = int(time.time())
         if cfg.experiment.distributed:
-            # if using DDP, we need to get the wrapped module
-            # so the file has the proper name.
             model_name = model.module.__class__.__name__
         else:
             model_name = model.__class__.__name__
@@ -200,7 +203,7 @@ def train_app(cfg):
         if cfg.experiment.distributed:
             torch.save(model.module.state_dict(), f'{ckpt_path}')
         else:
-            torch.save(model.state_dict(), f'{fkpt_path}')
+            torch.save(model.state_dict(), f'{ckpt_path}')
 
     if cfg.test and dist_utils.is_leader_process():
         trainer.test(val_dataset.datasets[0])

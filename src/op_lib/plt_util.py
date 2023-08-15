@@ -23,13 +23,10 @@ def plt_iter_mae(temps, labels):
     for i in range(len(temps)):
         rmse = torch.sqrt(torch.mean(((temps[i] - labels[i]) ** 2).detach().cpu()))
         rmses.append(rmse)
-    with open('maes', 'w+') as f:
+    job_id = os.environ['SLURM_JOB_ID']
+    with open('test/temp/{job_id}/iter_rmses', 'w+') as f:
         for rmse in rmses:
             f.write(f'{rmse}\n')
-    plt.plot(range(len(rmses)), rmses)
-    plt.xlabel('Forward Prop Iteration')
-    plt.ylabel('RMSE')
-    plt.savefig('iter_mae.png', bbox_inches='tight', dpi=500)
 
 def plt_temp(temps, labels, model_name):
     temps = (temps + 1) / 2
@@ -70,6 +67,9 @@ def plt_temp(temps, labels, model_name):
                     bbox_inches='tight',
                     transparent=True)
         plt.close()
+
+        torch.save(temps, f'{im_path}/model_ouput.pt')
+        torch.save(labels, f'{im_path}/sim_ouput.pt')
 
 def plt_vel(vel_preds, vel_labels, max_mag, model_name):
 
@@ -112,3 +112,6 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
         im_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{str(im_path)}/{i_str}.png', dpi=500)
         plt.close()
+
+        torch.save(vel_preds, f'{im_path}/model_ouput.pt')
+        torch.save(vel_labels, f'{im_path}/sim_ouput.pt')
