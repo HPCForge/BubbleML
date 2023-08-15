@@ -31,7 +31,8 @@ class TempTrainer:
                  lr_scheduler,
                  val_variable,
                  writer,
-                 cfg):
+                 cfg,
+                 add_PDE_LOSS = False):
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
@@ -40,7 +41,7 @@ class TempTrainer:
         self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg
-        self.loss = LpLoss(d=2)
+        self.loss = LpLoss(d=2, add_PDE_LOSS=add_PDE_LOSS)
 
     def train(self, max_epochs):
         for epoch in range(max_epochs):

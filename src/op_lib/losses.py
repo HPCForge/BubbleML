@@ -4,9 +4,10 @@ https://github.com/neuraloperator/neuraloperator
 """
 import math
 import torch
+import torch.nn.functional as F
 
 class LpLoss(object):
-    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum'):
+    def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum', add_PDE_LOSS = False):
         super().__init__()
 
         self.d = d
@@ -180,3 +181,44 @@ class H1Loss(object):
 
     def __call__(self, x, y, h=None):
         return self.rel(x, y, h=h)
+
+def temp_stokes_loss(T, u, v):
+    batchsize = T.size(0)
+    nx = T.size(2)
+    ny = T.size(3)
+    
+    device = T.device
+    T = T.reshape(batchsize, nx, ny)
+    u = u.reshape(batchsize, nx, ny)
+    v = v.reshape(batchsize, nx, ny)
+
+    T_h = torch.fft.fft2(T, dim=[-2, -1])
+    u_h = torch.fft.fft2(u, dim=[-2, -1])
+    v_h = torch.fft.fft2(v, dim=[-2, -1])
+    # Wavenumbers in y-direction
+    k_maxx = nx//2
+    k_maxy = ny//2
+    Nx = nx
+    Ny = ny
+    k_x = torch.cat((torch.arange(start=0, end=k_maxx, step=1, device=device),
+                     torch.arange(start=-k_maxx, end=0, step=1, device=device)), 0).reshape(Nx, 1).repeat(1, Ny).reshape(1,Nx,Ny)
+    k_y = torch.cat((torch.arange(start=0, end=k_maxy, step=1, device=device),
+                     torch.arange(start=-k_maxy, end=0, step=1, device=device)), 0).reshape(1, Ny).repeat(Nx, 1).reshape(1,Nx,Ny)
+    #Laplacian in Fourier space
+    lap = (k_x ** 2 + k_y ** 2)
+    lap[0, 0, 0] = 1.0
+
+    Ty_h = 1j * k_y * T_h
+    Tx_h = 1j * k_x * T_h
+    Tlap_h = lap * T_h
+
+    Txu_conv_h = F.conv2d(u_h, Tx_h, stride = 1, padding = (0,0))*(1/(4*(math.pi**2)))
+    Tyv_conv_h = F.conv2d(v_h, Ty_h, stride = 1, padding = (0,0))*(1/(4*(math.pi**2)))
+
+    gradTdotu_h = Tyv_conv_h + Txu_conv_h
+
+    gradTdotu = torch.fft.irfft2(gradTdotu_h[:, :, :k_maxy + 1], dim=[-2, -1])
+    Tlap = torch.fft.irfft2(Tlap_h[:, :, :k_maxy+1], dim=[-2,-1])
+
+    PDE_LOSS = torch.sum(torch.square(gradTdotu - Tlap))
+    return PDE_LOSS
