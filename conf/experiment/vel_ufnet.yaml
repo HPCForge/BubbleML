@@ -10,6 +10,8 @@ train:
   future_window: 5
   push_forward_steps: 1
   use_coords: False
+  noise: True
+  downsample_factor: 0.5
 
 model:
   model_name: ufnet

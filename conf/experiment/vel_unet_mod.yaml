@@ -8,8 +8,10 @@ train:
   shuffle_data: True
   time_window: 5
   future_window: 5
-  push_forward_steps: 2
+  push_forward_steps: 3
   use_coords: False
+  noise: True
+  downsample_factor: 0.5
 
 model:
   model_name: unet_mod_attn
@@ -17,7 +19,7 @@ model:
   
 optimizer:
   initial_lr: 5e-4
-  weight_decay: 0.001
+  weight_decay: 0.01
 
 lr_scheduler:
   factor: 0.5

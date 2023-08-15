@@ -10,16 +10,18 @@ train:
   future_window: 5
   push_forward_steps: 1
   use_coords: False
+  noise: True
+  downsample_factor: 0.5
 
 model:
   model_name: unet2d
-  init_features: 32
+  init_features: 64
   
 optimizer:
   initial_lr: 1e-3
   weight_decay: 0.01
 
-#lr_scheduler:
-#  factor: 0.5
-#  patience: 100
-#  min_lr: 1e-8
+lr_scheduler:
+  factor: 0.5
+  patience: 100
+  min_lr: 1e-8

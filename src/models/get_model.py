@@ -59,17 +59,18 @@ def get_model(model_name, in_channels, out_channels, exp):
                     in_channels=in_channels,
                     out_channels=out_channels,
                     n_layers=exp.model.n_layers,
+                    norm=exp.model.norm,
                     factorization='tucker',
                     implementation='factorized',
-                    rank=0.05)
+                    rank=exp.model.rank)
     elif model_name == _UNO:
         model = UNO(in_channels=in_channels, 
                     out_channels=out_channels,
                     hidden_channels=exp.model.hidden_channels,
                     projection_channels=exp.model.projection_channels,
-                    uno_out_channels=[32,64,64,64,32],
-                    uno_n_modes=[[32,32],[16,16],[16,16],[16,16],[32,32]],
-                    uno_scalings=[[1,1],[0.5,0.5],[1,1],[1,1],[2,2]],
+                    uno_out_channels=exp.model.uno_out_channels,
+                    uno_n_modes=exp.model.uno_n_modes,
+                    uno_scalings=exp.model.uno_scalings,
                     n_layers=exp.model.n_layers,
                     domain_padding=exp.model.domain_padding)
     elif model_name == _FFNO:
