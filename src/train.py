@@ -10,7 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
-from neuralop.models import FNO, UNO
+from neuralop.models import UNO
+from ..models.PINO_util import FNO
 from pathlib import Path
 import os
 import time
