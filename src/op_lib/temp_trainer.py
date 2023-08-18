@@ -36,7 +36,8 @@ class TempTrainer:
                  lr_scheduler,
                  val_variable,
                  writer,
-                 cfg):
+                 cfg,
+                 add_PDE_LOSS = False):
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
@@ -45,7 +46,7 @@ class TempTrainer:
         self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg
-        self.loss = LpLoss(d=2, reduce_dims=[0, 1])
+        self.loss = LpLoss(d=2, add_PDE_LOSS=add_PDE_LOSS, reduce_dims=[0, 1])
 
         self.push_forward_steps = push_forward_steps
         self.future_window = future_window

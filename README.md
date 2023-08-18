@@ -1,5 +1,7 @@
 # BubbleML
 
+[![Paper](https://img.shields.io/badge/arXiv-2209.15616-blue)](https://arxiv.org/abs/2307.14623)
+
 A multi-physics dataset of boiling processes.  
 This repository includes downloads, visualizations, and sample applications.
 
@@ -82,3 +84,18 @@ then, to train a UNet model on the subcooled boiling dataset, just run
 ~~~~
 python src/train.py data_base_dir=/your/path/to/BubbleML dataset=PB_SubCooled experiment=temp_unet
 ~~~~
+
+## Citation
+
+If you find this dataset useful in your research, please consider citing the following paper:
+
+```bibtex
+@article{hassan2023bubbleml,
+      title={BubbleML: A Multi-Physics Dataset and Benchmarks for Machine Learning}, 
+      author={Sheikh Md Shakeel Hassan and Arthur Feeney and Akash Dhruv and Jihoon Kim and Youngjoon Suh and Jaiyoung Ryu and Yoonjin Won and Aparna Chandramowlishwaran},
+      year={2023},
+      eprint={2307.14623},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
