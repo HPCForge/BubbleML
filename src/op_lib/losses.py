@@ -5,6 +5,7 @@ https://github.com/neuraloperator/neuraloperator
 import math
 import torch
 import torch.nn.functional as F
+from neuralop.layers.resample import resample
 
 class LpLoss(object):
     def __init__(self, d=1, p=2, L=2*math.pi, reduce_dims=0, reductions='sum', add_PDE_LOSS = False):
@@ -182,7 +183,7 @@ class H1Loss(object):
     def __call__(self, x, y, h=None):
         return self.rel(x, y, h=h)
 
-def temp_stokes_loss(T, u, v):
+def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt):
     batchsize = T.size(0)
     nx = T.size(2)
     ny = T.size(3)
@@ -191,6 +192,8 @@ def temp_stokes_loss(T, u, v):
     T = T.reshape(batchsize, nx, ny)
     u = u.reshape(batchsize, nx, ny)
     v = v.reshape(batchsize, nx, ny)
+    if T_prev.size(-2) != T.size(-2) or T_prev.size(-1) != T.size(-1):
+        T_prev = resample(T_prev, resolution_scaling, [-2, -1], output_shape=T.shape) 
 
     T_h = torch.fft.fft2(T, dim=[-2, -1])
     u_h = torch.fft.fft2(u, dim=[-2, -1])
@@ -220,5 +223,7 @@ def temp_stokes_loss(T, u, v):
     gradTdotu = torch.fft.irfft2(gradTdotu_h[:, :, :k_maxy + 1], dim=[-2, -1])
     Tlap = torch.fft.irfft2(Tlap_h[:, :, :k_maxy+1], dim=[-2,-1])
 
-    PDE_LOSS = torch.sum(torch.square(gradTdotu - Tlap))
+    Tdt = (T-T_prev)/dt
+
+    PDE_LOSS = torch.sum(torch.square(Tdt + gradTdotu - Tlap))
     return PDE_LOSS

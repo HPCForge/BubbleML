@@ -137,7 +137,7 @@ class FNOBlocks(nn.Module):
             if self.norm is not None:
                 x = self.norm[self.n_norms*index](x)
                 if default_render is not None:
-                    default_render = self.norm[self.n_norms*index](x)
+                    default_render = self.norm[self.n_norms*index](default_render)
     
         x_skip_fno = self.fno_skips[index](x)
         if default_render is not None:
