@@ -1,5 +1,6 @@
 import os
-from neuralop.models import FNO, UNO
+from neuralop.models import UNO
+from .PINO_util.fno import FNO
 from .factorized_fno.factorized_fno import FNOFactorized2DBlock 
 from .gefno.gfno import GFNO2d
 from .pdebench.unet import UNet2d 

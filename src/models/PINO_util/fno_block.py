@@ -163,7 +163,7 @@ class FNOBlocks(nn.Module):
 
         x_fno = self.convs(x, index, output_shape=output_shape)
         if default_render is not None:
-            _, _, *default_mode_size = x_fno_default_scale.shape
+            default_mode_size = x_fno_default_scale.shape[-2:]
             x_fno_default_scale = self.convs(default_render, index, output_shape=default_mode_size)
 
         if not self.preactivation and self.norm is not None:

@@ -57,6 +57,10 @@ def write_metrics(pred, label, iter, stage, writer):
     writer.add_scalar(f'{stage}/RMSE', rmse(pred, label), iter)
     writer.add_scalar(f'{stage}/MaxERror', max_error(pred, label), iter)
 
+def write_PDE_metrics():
+    return None
+
+
 def mae(pred, label):
     return F.l1_loss(pred, label)
 

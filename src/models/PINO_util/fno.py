@@ -193,7 +193,6 @@ class FNO(nn.Module):
                 x, x_default_scale = self.fno_blocks(x, layer_idx, default_render = x_default_scale)
             else: 
                 x = self.fno_blocks(x, layer_idx)
-            
 
         if self.domain_padding is not None:
             x = self.domain_padding.unpad(x)
@@ -205,6 +204,7 @@ class FNO(nn.Module):
         if self.render_default_scale:
             x_default_scale = self.projection(x_default_scale)
             return x, x_default_scale
+        
         return x
 
     @property
