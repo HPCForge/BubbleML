@@ -3,40 +3,16 @@
 [![Paper](https://img.shields.io/badge/arXiv-2209.15616-blue)](https://arxiv.org/abs/2307.14623)
 
 A multi-physics dataset of boiling processes.  
-This repository includes downloads, visualizations, and sample applications.
+This repository includes downloads, visualizations, and sample applications.  It provides baselines and sample applications for the bubble ML dataset. Videos can be seen in [video](video/) directory. 
 
 ![SubCooled Temperature](video/subcooled.gif)
 
 This dataset can be used to train operator networks, act as a ground truth for Physics-Informed Neural Networks, or train computer vision models.
 These models have applications to cooling systems for datacenters (I.e., liquid cooling flowing across a GPU) or even cooling nuclear reactors (I.e., a pool of liquid sitting on a heated surface).
 
-This repository provides baselines and sample applications for the bubble ML dataset. Sample videos can be seen in [video](video/) directory. 
+## Download BubbleML
 
-## Dataset Downloads
-
-The dataset is hosted on AWS. Each boiling study can be downloaded separately.
-
-| Study | Size |
-|-----------------------|----|
-| [Single Bubble](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/single-bubble.tar.gz)     | 503.0 MB |
-| [Pool Boiling Saturated](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-saturated-fc72-2d.tar.gz)      | 24.4 GB |
-| [Pool Boiling Subcooled](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-subcooled-fc72-2d.tar.gz)      | 10.5 GB |
-| [Pool Boiling Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-gravity-fc72-2d.tar.gz)        | 16.5 GB |
-| [Flow Boiling Inlet Velocity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/flow-boiling-velscale-fc72-2d.tar.gz) | 11.4 GB |
-| [Flow Boiling Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/flow-boiling-gravity-fc72-2d.tar.gz)        | 10.9 GB |
-| [3D Pool Boiling Earth Gravity](https://anl.app.box.com/s/wwj2f9b0t2eetjmieoj163axmxctuswd)    | 140.7 GB |
-| [3D Pool Boiling Low Gravity](https://anl.app.box.com/s/vnsfq59k9gnkhxyhhrc48sjwj61sjnia/) | 71.5 GB |
-
-## Model Checkpoints
-
-The model checkpoints are organized based on the dataset they were trained on. So,
-each link contains checkpoints FNO, UNO and UNet.
-
-| Models | Size |
-|----|----|
-| [Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
-| [Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
-| [Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
+BubbleML is publicly available and open source. We provide [dataset and checkpoint downloads](downloads/README.md)
 
 ## Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
@@ -49,7 +25,14 @@ To install dependencies, we recommend creating a conda environment:
 conda env create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
 ```
 
-## Running Sample Code
+## Examples
+
+In [examples/](examples/), we provide Jupyter Notebooks showing how to [read and visualize BubbleML](examples/data_loading.ipynb)
+and [train fno](examples/pytorch_training.ipynb). These are stand-alone examples that use a downsampled version of
+Subcooled Pool boiling. These examples are intended to show 1. how to load the dataset, 2. how to read tensors from
+the dataset, and 3. how to setup model training for the dataset.
+
+## Running Experiment Code
 
 The sample code uses Hydra to manage different configurations.
 For example, we treat each simulation type as a dataset: `conf/dataset/*.yaml`.
