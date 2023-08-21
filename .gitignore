@@ -1,3 +1,6 @@
+# PyTorch Tensor
+*.pt
+
 # boiling dataset
 *.hdf5
 
