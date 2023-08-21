@@ -166,11 +166,14 @@ def train_app(cfg):
     warmup_iters = max(1, int(math.sqrt(dist_utils.world_size()) * 0.03 * total_iters))
     warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
     warm_iters = total_iters - warmup_iters
-    #warm_schedule = torch.optim.lr_scheduler.PolynomialLR(optimizer,
-    #                                                      total_iters=warm_iters)
-    warm_schedule = torch.optim.lr_scheduler.StepLR(optimizer,
-                                                    step_size=exp.lr_scheduler.patience * len(train_dataloader),
-                                                    gamma=exp.lr_scheduler.factor)
+    if exp.lr_scheduler.name == 'step':
+        warm_schedule = torch.optim.lr_scheduler.StepLR(optimizer,
+                                                        step_size=exp.lr_scheduler.patience * len(train_dataloader),
+                                                        gamma=exp.lr_scheduler.factor)
+    elif exp.lr_scheduler.name == 'cosine':
+        warm_schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                                   T_max=exp.train.max_epochs * len(train_dataloader),
+                                                                   eta_min=1e-6)
     # SequentialLR produces a deprecation warning when calling sub-schedulers.
     # https://github.com/pytorch/pytorch/issues/76113
     lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
@@ -189,7 +192,7 @@ def train_app(cfg):
     print(trainer)
 
     if cfg.train and not cfg.model_checkpoint:
-        trainer.train(exp.train.max_epochs)
+        trainer.train(exp.train.max_epochs, log_dir, dataset_name=cfg.dataset.name)
         timestamp = int(time.time())
         if cfg.experiment.distributed:
             model_name = model.module.__class__.__name__

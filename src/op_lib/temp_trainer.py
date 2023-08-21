@@ -51,7 +51,7 @@ class TempTrainer:
         self.future_window = future_window
         self.local_rank = local_rank() 
 
-    def train(self, max_epochs):
+    def train(self, max_epochs, *args, **kwargs):
         for epoch in range(max_epochs):
             print('epoch ', epoch)
             self.train_step(epoch)
@@ -61,6 +61,7 @@ class TempTrainer:
         input = torch.cat((temp, vel), dim=1)
         if self.cfg.train.use_coords:
             input = torch.cat((coords, input), dim=1)
+        #print(input.size())
         pred = self.model(input)
         return pred
         # TODO: account for different timesteps of training data
@@ -82,7 +83,7 @@ class TempTrainer:
     def downsample_domain(self, *args):
         downsample_factor = self.cfg.train.downsample_factor
         assert downsample_factor > 0 and downsample_factor <= 1.0
-        return tuple([F.interpolate(im, scale_factor=downsample_factor) for im in args])
+        return tuple([F.interpolate(im, scale_factor=(downsample_factor, downsample_factor)) for im in args])
 
     def train_step(self, epoch):
         self.model.train()
@@ -99,6 +100,7 @@ class TempTrainer:
             loss = self.loss(pred, label)
             self.optimizer.zero_grad()
             loss.backward()
+            nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
             self.lr_scheduler.step()
             
@@ -161,5 +163,5 @@ class TempTrainer:
             #print(heatflux(temps, dfun, self.val_variable, xgrid, dataset.get_dy()))
             #print(heatflux(labels, dfun, self.val_variable, xgrid, dataset.get_dy()))
             
-            plt_iter_mae(temps, labels)
             plt_temp(temps, labels, self.model.__class__.__name__)
+            plt_iter_mae(temps, labels)

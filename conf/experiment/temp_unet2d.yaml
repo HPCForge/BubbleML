@@ -22,6 +22,7 @@ optimizer:
   weight_decay: 0.01
 
 lr_scheduler:
+  name: 'step'
   factor: 0.5
   patience: 75
   min_lr: 1e-8

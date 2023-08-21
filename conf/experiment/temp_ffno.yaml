@@ -18,14 +18,15 @@ model:
   modes: 64
   width: 256
   dropout: 0.0
-  n_layers: 8
+  n_layers: 7
   layer_norm: True
 
 optimizer:
-  initial_lr: 1e-3
+  initial_lr: 5e-4
   weight_decay: 0.01
 
 lr_scheduler:
+  name: 'step'
   factor: 0.5
   patience: 75
   min_lr: 1e-8

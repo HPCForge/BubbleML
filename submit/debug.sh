@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH -p free-gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:A100:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
 #SBATCH --mem-per-cpu=4G
-#SBATCH --time=0:10:00
+#SBATCH --time=0:30:00
 
 # One node needs to be used as the "host" for the rendezvuoz
 # system used by torch. This just gets a list of the hostnames
@@ -28,12 +28,13 @@ export TORCH_DISTRIBUTED_DEBUG=DETAIL
 #    --rdzv_endpoint $HOST_NODE_ADDR \
 #    --redirects 3 \
 #    --tee 3 \
+	#data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
+	#model_checkpoint=/pub/afeeney/train_log_dir/23755705/subcooled/Unet_vel_dataset_25_1692516617.pt
 python src/train.py \
 	data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
+	dataset=PB_SubCooled \
 	log_dir=/pub/afeeney/train_log_dir/ \
-	dataset=PB_Gravity\
 	experiment.distributed=False \
-	experiment=temp_unet2d \
+	experiment=temp_gfno \
 	experiment.train.max_epochs=3 \
-	experiment.lr_scheduler.patience=50
-	model_checkpoint=/pub/afeeney/train_log_dir/23370440/pb_gravity/
+	#model_checkpoint=/pub/afeeney/train_log_dir/23370470/pb_gravity/FNO_temp_input_dataset_250_1692173966.pt

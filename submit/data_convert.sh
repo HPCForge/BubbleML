@@ -18,5 +18,4 @@ DST=/share/crsp/lab/amowli/share/BubbleML2/$DATASET
 
 mkdir -p $DST
 
-#python scripts/boxkit_dataset.py
 python scripts/permute_dataset.py --src $SRC --dst $DST 

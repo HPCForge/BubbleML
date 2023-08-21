@@ -12,12 +12,12 @@ train:
   push_forward_steps: 1
   use_coords: True
   noise: True
-  downsample_factor: 0.5
+  downsample_factor: 0.25
 
 model:
   model_name: gfno
   modes: 32
-  width: 128
+  width: 64
   reflection: False
 
 optimizer:
@@ -25,6 +25,7 @@ optimizer:
   weight_decay: 0.01
 
 lr_scheduler:
+  name: 'step'
   factor: 0.5
   patience: 75
   min_lr: 1e-8

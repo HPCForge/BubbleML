@@ -2,10 +2,10 @@ name: subcooled
 transform: True
 steady_time: 300
 train_paths:
-  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-79.hdf5
-  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-81.hdf5
-  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-85.hdf5
-  - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-88.hdf5
+        #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-79.hdf5
+        #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-81.hdf5
+        #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-85.hdf5
+        #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-88.hdf5
   - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-90.hdf5
   - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-92.hdf5
   - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-95.hdf5
