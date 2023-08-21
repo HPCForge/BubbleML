@@ -77,7 +77,8 @@ If you find this dataset useful in your research, please consider citing the fol
 ```bibtex
 @article{hassan2023bubbleml,
       title={BubbleML: A Multi-Physics Dataset and Benchmarks for Machine Learning}, 
-      author={Sheikh Md Shakeel Hassan and Arthur Feeney and Akash Dhruv and Jihoon Kim and Youngjoon Suh and Jaiyoung Ryu and Yoonjin Won and Aparna Chandramowlishwaran},
+      author={Sheikh Md Shakeel Hassan and Arthur Feeney and Akash Dhruv and Jihoon Kim and 
+	      Youngjoon Suh and Jaiyoung Ryu and Yoonjin Won and Aparna Chandramowlishwaran},
       year={2023},
       eprint={2307.14623},
       archivePrefix={arXiv},
