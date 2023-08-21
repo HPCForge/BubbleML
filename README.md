@@ -65,7 +65,9 @@ For example, if you downloaded two datasets to
 then, to train a UNet model on the subcooled boiling dataset, just run
 
 ```console
-python src/train.py data_base_dir=/your/path/to/BubbleML dataset=PB_SubCooled experiment=temp_unet
+python src/train.py \
+	data_base_dir=/your/path/to/BubbleML \
+	dataset=PB_SubCooled experiment=temp_unet
 ```
 
 ## Citation
