@@ -8,7 +8,8 @@ is the domain resolution.
 
 We provide two jupyter notebooks:
 1. `data_loading.ipynb` shows how to load simulations using h5py, what the keys are for each hdf5 file,
-and 
+and how to visualize different timesteps for each variable. It also shows how to use the distance
+function to get point in liquid or vapor, or the phase interface. 
 2. `pytorch_training.ipynb` uses the three sample datasets to train a Fourier Neural Operator.
 We do not apply the training strategies used in our experiments, this is intended to serve as an
 example of how to use BubbleML, not reproduce our results. This example shows how to setup a
