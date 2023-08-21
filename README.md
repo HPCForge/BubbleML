@@ -12,7 +12,7 @@ These models have applications to cooling systems for datacenters (I.e., liquid 
 
 ## Download BubbleML
 
-BubbleML is publicly available and open source. We provide [dataset and checkpoint downloads](downloads/README.md)
+BubbleML is publicly available and open source. We provide [dataset and checkpoint downloads](dataset/README.md)
 
 ## Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
