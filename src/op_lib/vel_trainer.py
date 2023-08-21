@@ -8,6 +8,8 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+from pathlib import Path
 
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
 from .metrics import compute_metrics
@@ -34,12 +36,31 @@ class VelTrainer:
         self.cfg = cfg
         self.loss = LpLoss(d=2)
 
-    def train(self, max_epochs):
+    def save_checkpoint(self, dataset_name):
+        timestamp = int(time.time())
+        if self.cfg.distributed:
+            model_name = self.model.module.__class__.__name__
+        else:
+            model_name = self.model.__class__.__name__
+        ckpt_file = f'{model_name}_{cfg.torch_dataset_name}_{cfg.train.max_epochs}_{timestamp}.pt'
+        ckpt_root = Path.home() / f'{log_dir}/{dataset_name}'
+        Path(ckpt_root).mkdir(parents=True, exist_ok=True)
+        ckpt_path = f'{ckpt_root}/{ckpt_file}'
+        print(f'saving model to {ckpt_path}')
+        if cfg.distributed:
+            torch.save(self.model.module.state_dict(), f'{ckpt_path}')
+        else:
+            torch.save(self.model.state_dict(), f'{ckpt_path}')
+
+    def train(self, max_epochs, dataset_name):
         for epoch in range(max_epochs):
             print('epoch ', epoch)
             self.train_step(epoch)
             self.val_step(epoch)
             self.lr_scheduler.step()
+            val_dataset = self.val_dataloader.dataset.datasets[0]
+            self.test(val_dataset)
+            self.save_checkpoint(dataset_name)
 
     def train_step(self, epoch):
         self.model.train()

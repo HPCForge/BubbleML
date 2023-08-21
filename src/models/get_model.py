@@ -36,6 +36,8 @@ def get_model(model_name, in_channels, out_channels, exp):
         model = Unet(in_channels=in_channels,
                      out_channels=out_channels,
                      hidden_channels=exp.model.hidden_channels,
+                     ch_mults=[1,2,2,4,4],
+                     is_attn=[False]*5,
                      activation='gelu',
                      mid_attn=False,
                      norm=True,

@@ -25,6 +25,7 @@ optimizer:
   weight_decay: 0.001
 
 lr_scheduler:
+  name: cosine
   factor: 0.5
   patience: 100
   min_lr: 1e-8

@@ -24,7 +24,9 @@ def plt_iter_mae(temps, labels):
         rmse = torch.sqrt(torch.mean(((temps[i] - labels[i]) ** 2).detach().cpu()))
         rmses.append(rmse)
     job_id = os.environ['SLURM_JOB_ID']
-    with open('test/temp/{job_id}/iter_rmses', 'w+') as f:
+    job_path = Path(f'test_im/temp/{job_id}/')
+    job_path.mkdir(parents=True, exist_ok=True)
+    with open(str(job_path) + 'iter_rmse', 'w+') as f:
         for rmse in rmses:
             f.write(f'{rmse}\n')
 
@@ -32,6 +34,7 @@ def plt_temp(temps, labels, model_name):
     temps = (temps + 1) / 2
     labels = (labels + 1) / 2
 
+    """
     plt.rc("font", family="serif", size=16, weight="bold")
     plt.rc("axes", labelweight="bold")
     for i in range(len(temps)):
@@ -67,11 +70,17 @@ def plt_temp(temps, labels, model_name):
                     bbox_inches='tight',
                     transparent=True)
         plt.close()
+    """
+    job_id = os.environ['SLURM_JOB_ID']
+    im_path = Path(f'test_im/temp/{job_id}/')
+    im_path.mkdir(parents=True, exist_ok=True)
+    torch.save(temps, f'{im_path}/model_ouput.pt')
+    torch.save(labels, f'{im_path}/sim_ouput.pt')
 
-        torch.save(temps, f'{im_path}/model_ouput.pt')
-        torch.save(labels, f'{im_path}/sim_ouput.pt')
-
-def plt_vel(vel_preds, vel_labels, max_mag, model_name):
+def plt_vel(vel_preds, vel_labels,
+            velx_preds, velx_labels,
+            vely_preds, vely_labels,
+            model_name):
 
     #vel_preds = (vel_preds + 1) / 2
     #vel_labels = (vel_labels + 1) / 2
@@ -79,6 +88,7 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
     max_mag = vel_labels.max()
     min_mag = vel_labels.min()
 
+    """
     for i in range(len(vel_preds)):
         i_str = str(i).zfill(3)
 
@@ -112,6 +122,13 @@ def plt_vel(vel_preds, vel_labels, max_mag, model_name):
         im_path.mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{str(im_path)}/{i_str}.png', dpi=500)
         plt.close()
-
-        torch.save(vel_preds, f'{im_path}/model_ouput.pt')
-        torch.save(vel_labels, f'{im_path}/sim_ouput.pt')
+    """
+    job_id = os.environ['SLURM_JOB_ID']
+    im_path = Path(f'test_im/vel/{job_id}/')
+    im_path.mkdir(parents=True, exist_ok=True)
+    torch.save(vel_preds, f'{im_path}/mag_ouput.pt')
+    torch.save(vel_labels, f'{im_path}/mag_label.pt')
+    torch.save(velx_preds, f'{im_path}/velx_output.pt')
+    torch.save(velx_labels, f'{im_path}/velx_label.pt')
+    torch.save(vely_preds, f'{im_path}/vely_output.pt')
+    torch.save(vely_labels, f'{im_path}/vely_label.pt')

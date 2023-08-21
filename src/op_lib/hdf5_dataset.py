@@ -47,13 +47,20 @@ class HDF5Dataset(Dataset):
                  push_forward_steps=1):
         super().__init__()
         assert time_window > 0, 'HDF5Dataset.__init__():time window should be positive'
+        self.filename = filename
         self.steady_time = steady_time
         self.transform = transform
         self.time_window = time_window
         self.future_window = future_window
         self.push_forward_steps = push_forward_steps
+        self.temp_scale = None
+        self.vel_scale = None
+        self.reset()
+
+
+    def reset(self):
         self._data = {}
-        with h5py.File(filename, 'r') as f:
+        with h5py.File(self.filename, 'r') as f:
             self._data['temp'] = torch.nan_to_num(torch.from_numpy(f['temperature'][:][self.steady_time:]))
             self._data['velx'] = torch.nan_to_num(torch.from_numpy(f['velx'][:][self.steady_time:]))
             self._data['vely'] = torch.nan_to_num(torch.from_numpy(f['vely'][:][self.steady_time:]))
@@ -61,8 +68,10 @@ class HDF5Dataset(Dataset):
             self._data['x'] = torch.from_numpy(f['x'][:][self.steady_time:])
             self._data['y'] = torch.from_numpy(f['y'][:][self.steady_time:])
 
-        self._redim_temp(filename)
-
+        self._redim_temp(self.filename)
+        if self.temp_scale and self.vel_scale:
+            self.normalize_temp_(self.temp_scale)
+            self.normalize_vel_(self.vel_scale)
 
     def _redim_temp(self, filename):
         r"""
@@ -87,10 +96,12 @@ class HDF5Dataset(Dataset):
 
     def normalize_temp_(self, scale):
         self._data['temp'] = 2 * (self._data['temp'] / scale) - 1
+        self.temp_scale = scale
 
     def normalize_vel_(self, scale):
         for v in ('velx', 'vely'):
             self._data[v] = self._data[v] / scale
+        self.vel_scale = scale
 
     def get_x(self):
         return self._data['x'][self.time_window:]

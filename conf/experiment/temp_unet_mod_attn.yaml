@@ -1,6 +1,6 @@
 torch_dataset_name: temp_input_dataset 
 
-distributed: True
+distributed: False
 
 train:
   max_epochs: 250 
@@ -15,13 +15,14 @@ train:
 
 model:
   model_name: unet_mod_attn
-  hidden_channels: 64
+  hidden_channels: 32
   
 optimizer:
   initial_lr: 5e-4
   weight_decay: 0.01
 
 lr_scheduler:
+  name: 'step'
   factor: 0.5
   patience: 75
   min_lr: 1e-8
