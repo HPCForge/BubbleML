@@ -183,15 +183,16 @@ class H1Loss(object):
     def __call__(self, x, y, h=None):
         return self.rel(x, y, h=h)
 
-def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt):
+def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt, future_window):
     batchsize = T.size(0)
-    nx = T.size(2)
-    ny = T.size(3)
+    nx = T.size(3)
+    ny = T.size(4)
     
     device = T.device
-    T = T.reshape(batchsize, nx, ny)
-    u = u.reshape(batchsize, nx, ny)
-    v = v.reshape(batchsize, nx, ny)
+    T = T.reshape(batchsize, future_window, nx, ny)
+    u = u.reshape(batchsize, future_window, nx, ny)
+    v = v.reshape(batchsize, future_window, nx, ny)
+
     if T_prev.size(-2) != T.size(-2) or T_prev.size(-1) != T.size(-1):
         T_prev = resample(T_prev, resolution_scaling, [-2, -1], output_shape=T.shape) 
 
@@ -204,12 +205,12 @@ def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt):
     Nx = nx
     Ny = ny
     k_x = torch.cat((torch.arange(start=0, end=k_maxx, step=1, device=device),
-                     torch.arange(start=-k_maxx, end=0, step=1, device=device)), 0).reshape(Nx, 1).repeat(1, Ny).reshape(1,Nx,Ny)
+                     torch.arange(start=-k_maxx, end=0, step=1, device=device)), 0).reshape(Nx, 1).repeat(1, Ny).reshape(1,1,Nx,Ny)
     k_y = torch.cat((torch.arange(start=0, end=k_maxy, step=1, device=device),
-                     torch.arange(start=-k_maxy, end=0, step=1, device=device)), 0).reshape(1, Ny).repeat(Nx, 1).reshape(1,Nx,Ny)
+                     torch.arange(start=-k_maxy, end=0, step=1, device=device)), 0).reshape(1, Ny).repeat(Nx, 1).reshape(1,1,Nx,Ny)
     #Laplacian in Fourier space
     lap = (k_x ** 2 + k_y ** 2)
-    lap[0, 0, 0] = 1.0
+    lap[0, 0, 0, 0] = 1.0
 
     Ty_h = 1j * k_y * T_h
     Tx_h = 1j * k_x * T_h
@@ -223,7 +224,8 @@ def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt):
     gradTdotu = torch.fft.irfft2(gradTdotu_h[:, :, :k_maxy + 1], dim=[-2, -1])
     Tlap = torch.fft.irfft2(Tlap_h[:, :, :k_maxy+1], dim=[-2,-1])
 
-    Tdt = (T-T_prev)/dt
+    T = torch.cat((T_prev, T), 1)
+    Tdt = (T[:, 1:] - T[:, :-1])/dt
 
     PDE_LOSS = torch.sum(torch.square(Tdt + gradTdotu - Tlap))
     return PDE_LOSS

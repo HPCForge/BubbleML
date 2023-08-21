@@ -243,6 +243,7 @@ class PushVelPDETrainer:
     def __init__(self,
                  model,
                  future_window,
+                 resolution_scaling,
                  max_push_forward_steps,
                  train_dataloader,
                  val_dataloader,
@@ -263,6 +264,7 @@ class PushVelPDETrainer:
 
         self.max_push_forward_steps = max_push_forward_steps
         self.future_window = future_window
+        self.resolution_scaling = resolution_scaling
         self.use_coords = cfg.train.use_coords
 
     def train(self, max_epochs):
@@ -326,7 +328,7 @@ class PushVelPDETrainer:
             temp_input += torch.empty_like(temp_input).normal_(0, 0.01)
             vel_input += torch.empty_like(vel_input).normal_(0, 0.01)
         temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
-        return temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale
+        return temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale, temp_input
 
     def downsample_domain(self, *args):
         downsample_factor = self.cfg.train.downsample_factor
@@ -345,7 +347,7 @@ class PushVelPDETrainer:
             vel = vel.to(local_rank()).float()
             dfun = dfun.to(local_rank()).float()
             
-            temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps)
+            temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale, temp_input = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps)
 
             idx = (push_forward_steps - 1)
             temp_label = temp_label[:, idx].to(local_rank()).float()
@@ -353,6 +355,11 @@ class PushVelPDETrainer:
             vel_label = vel_label[:, idx].to(local_rank()).float()
 
             temp_label, vel_label = self.downsample_domain(temp_label, vel_label)
+
+            u = 0 #will define properly soon
+            v = 0
+            T_prev = temp_input[:, -1]
+            dt = 0
 
             temp_loss = self.loss(temp_pred_default_scale, temp_label)
             vel_loss = self.loss(vel_pred_default_scale, vel_label)
