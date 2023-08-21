@@ -45,9 +45,9 @@ Results have been reproduced on a Linux cluster with V100, A30, and A100 GPUs us
 
 To install dependencies, we recommend creating a conda environment:
 
-~~~~
+```console
 conda env create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
-~~~~
+```
 
 ## Running Sample Code
 
@@ -57,15 +57,15 @@ Similarly, each model is treated as a separate experiment: `conf/experiment/*.ya
 
 For example, training a temperature prediction UNet model on the subcooled boiling dataset is simple:
 
-~~~~
+```console
 python src/train.py dataset=PB_SubCooled experiment=temp_unet2d
-~~~~
+```
 
 If you want to run a pretrained model, you can specify the `model_checkpoint` path
 
-~~~~
+```console
 python src/train.py dataset=PB_SubCooled experiment=temp_unet2d model_checkpoint=<path>
-~~~~
+```
 
 The config file `conf/default.yaml` assumes that the datasets are extracted to the same location.
 **This location should be set by the user. By default, this setting is empty**.
@@ -74,16 +74,16 @@ specifying the dataset base directory when running the python scripts.)
 
 For example, if you downloaded two datasets to 
 
-~~~~
-/your/path/to/BubbleML/saturated.hdf5`  
-/your/path/to/BubbleML/subcooled.hdf5`  
-~~~~
+```console
+/your/path/to/BubbleML/saturated.hdf5
+/your/path/to/BubbleML/subcooled.hdf5
+```
 
 then, to train a UNet model on the subcooled boiling dataset, just run
 
-~~~~
+```console
 python src/train.py data_base_dir=/your/path/to/BubbleML dataset=PB_SubCooled experiment=temp_unet
-~~~~
+```
 
 ## Citation
 
