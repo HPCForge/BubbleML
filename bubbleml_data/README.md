@@ -17,13 +17,3 @@ BubbleML is hosted on AWS and can be publicly downloaded. Each boiling study can
 | [3D Pool Boiling ISS Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-iss-gravity-3d.tar.gz) | 62.6 GB |
 | [3D Flow Boiling Earth Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/flow-boiling-earth-gravity-3d.tar.gz) | 93.9 GB |
 
-## Model Checkpoints
-
-The model checkpoints are organized based on the dataset they were trained on. So,
-each link contains checkpoints FNO, UNO and UNet.
-
-| Models | Size |
-|----|----|
-| [Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
-| [Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
-| [Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
