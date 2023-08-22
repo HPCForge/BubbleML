@@ -10,11 +10,11 @@ This repository includes downloads, visualizations, and sample applications.  It
 This dataset can be used to train operator networks, act as a ground truth for Physics-Informed Neural Networks, or train computer vision models.
 These models have applications to cooling systems for datacenters (I.e., liquid cooling flowing across a GPU) or even cooling nuclear reactors (I.e., a pool of liquid sitting on a heated surface).
 
-Relevant documentation discussing the data fields, format, and relevant parameters can be found in [](bubbleml_data/DOCS.md).
+Relevant documentation discussing the data fields, format, and relevant parameters can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md).
 
 ## Download BubbleML
 
-BubbleML is publicly available and open source. We provide individual links to download the each study in [](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
+BubbleML is publicly available and open source. We provide individual links to download the each study in [bubbleml_data/README.md](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
 
 ```console
 cd bubbleml_data && bubbleml_data/download_all.sh
@@ -23,7 +23,7 @@ cd bubbleml_data && bubbleml_data/download_all.sh
 This will download all datasets listed in `bubbleml_data/README.md`. Note: the full dataset is over a terabyte in size.
 
 ## Models
-Checkpoints for all of the benchmark models mentioned in the paper along with ther respective results can be found at the [model zoo](model-zoo/README.md)
+Checkpoints for all of the benchmark models mentioned in the paper along with ther respective results are listed in the [model zoo](model-zoo/README.md)
 
 ## Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
@@ -39,9 +39,9 @@ conda env create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
 ## Examples
 
 In [examples/](examples/), we provide Jupyter Notebooks showing how to [read and visualize BubbleML](examples/data_loading.ipynb)
-and [train fno](examples/pytorch_training.ipynb). These are stand-alone examples that use a downsampled version of
+and [train a Fourier Neural Operator](examples/pytorch_training.ipynb). These are stand-alone examples that use a downsampled version of
 Subcooled Pool boiling. These examples are intended to show 1. how to load the dataset, 2. how to read tensors from
-the dataset, and 3. how to setup model training for the dataset. Extended descriptions can be found in [](bubbleml_data/DOCS.md)
+the dataset, and 3. how to setup model training for the dataset. Extended descriptions can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md)
 
 ## Running SciML Experiment Code
 
