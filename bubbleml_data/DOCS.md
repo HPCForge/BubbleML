@@ -91,3 +91,17 @@ When a point is in the vapor phase, `dfun > 0`. When a point is in the liquid ph
 be used to get a mask for all liquid points, all vapor points, or points along the bubble interface. In the [example](../examples/data_loading.ipynb),
 we include an example of how to compute the liquid-vapor interface using the same heavy-side function as the simulation.
 We use the distance function to generate a mask of bubble locations (I.e., points in the vapor phase.)
+
+## The Domain
+
+The simulation data we provide does not include the boundary. For instance,
+`f['temperature'][:, 0, 0]` is not indexing the heater. Instead, it is indexing the cell just above the heater. Similarly, 
+`f['temperature'][:, 0, 10]` is not indexing the wall, it is indexing the cell to the right of the wall. If you want to explicitly
+account for boundaries in your model (perhaps for a physics-informed neural network), you must handle it implicitly, or extend the domain
+with the boundary info. In our experiments, we treat it implicitly and assume that the model will be able to capture the boundary info
+from the input history. 
+
+## Extending BubbleML
+
+We provide a [reproducibility capsule](https://github.com/Lab-Notebooks/Outflow-Forcing-BubbleML) for running the simulations with Flash-X. This
+includes lab notebooks for running simulations. It also includes analysis scripts and the submissions files used to generate BubbleML.
