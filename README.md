@@ -15,7 +15,7 @@ These models have applications to cooling systems for datacenters (I.e., liquid 
 BubbleML is publicly available and open source. We provide individual links to download the datasets at [dataset downloads](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
 
 ```console
-bash bubbleml_data/download_all.sh
+cd bubbleml_data && bubbleml_data/download_all.sh
 ```
 
 This will download all datasets listed in `bubbleml_data/README.md`. Note: the full dataset is over a terabyte in size.
@@ -41,7 +41,7 @@ and [train fno](examples/pytorch_training.ipynb). These are stand-alone examples
 Subcooled Pool boiling. These examples are intended to show 1. how to load the dataset, 2. how to read tensors from
 the dataset, and 3. how to setup model training for the dataset.
 
-## Running Experiment Code
+## Running SciML Experiment Code
 
 The sample code uses Hydra to manage different configurations.
 For example, we treat each simulation type as a dataset: `conf/dataset/*.yaml`.
@@ -78,6 +78,9 @@ python src/train.py \
 	data_base_dir=/your/path/to/BubbleML \
 	dataset=PB_SubCooled experiment=temp_unet
 ```
+## Running Optical Flow Benchmarks
+
+Please refer [Optical Flow](optical_flow/README.md)
 
 ## Citation
 
