@@ -13,7 +13,7 @@ Each of these simulations is stored as one HDF5 file. All of the HDF5 files stor
 8. real-valud runtime parameters `real-runtime-params`
 9. integer-valued runtime paramters `int-runtime-params`
 
-The simulation data can be accessed using h5py. Here, we load the temperature data into a torch tensor.
+The simulation data can be accessed using h5py. Here, we load the temperature data into a torch tensor:
 
 ```python
 import h5py
@@ -36,7 +36,7 @@ For a full example of how to read and visualize each field, check [the data load
 
 ## Metadata (runtime-params)
 
-There is a lot of metadata associated with each of the simulations. Some settings may be difficult to interpret and most will be unnecessary. We list out keys that are particularly relevant. Some of these settings, like the Reynolds and Prandtl number are important parameters used for the governing equation. These will be critical when implementing a physics-informed model.
+There is a lot of metadata associated with each of the Flash-X simulations. Some settings may be difficult to interpret and most will be unnecessary. We list out keys that are particularly relevant. Some of these settings, like the Reynolds and Prandtl number are important parameters used for the governing equation. These will be critical when implementing a physics-informed model.
 
 Real runtime parameters (`real-runtime-params`):
 1. Inverse Reynold's number: `ins_invreynolds`
@@ -82,17 +82,18 @@ Each of the simulation files stores the pressure gradient, not the actual pressu
 in the governing equations. The pressure is computed by solving a Poisson equation. We have noticed that the Poisson solver may not be
 sufficiently robust to be used on its own. In the numerical simulations, this is fine because its main purpose is to correct the velocities, not
 serve as a truly accurate model of pressure. In our experiments, we did not use the pressure, but we make note of it for future users who may be interested. 
-It would be interesting to incorporate the pressure into models and test whether velocity predictions improve.
+It would be interesting to incorporate the pressure into models and test whether velocity predictions improve. The poisson solver will likely
+be improved in a future version of Flash-X.
 
 ## Distance function
 
-Each simulation includes a field `dfun`, which is a signed distance function to the nearest bubble.
+Each simulation includes a field `dfun`, which is a signed distance function to the nearest bubble interface.
 When a point is in the vapor phase, `dfun > 0`. When a point is in the liquid phase, `dfun <= 0`. This field can
 be used to get a mask for all liquid points, all vapor points, or points along the bubble interface. In the [example](../examples/data_loading.ipynb),
 we include an example of how to compute the liquid-vapor interface using the same heavy-side function as the simulation.
 We use the distance function to generate a mask of bubble locations (I.e., points in the vapor phase.)
 
-## The Domain
+## The Domain Boundary
 
 The simulation data we provide does not include the boundary. For instance,
 `f['temperature'][:, 0, 0]` is not indexing the heater. Instead, it is indexing the cell just above the heater. Similarly, 
@@ -100,6 +101,13 @@ The simulation data we provide does not include the boundary. For instance,
 account for boundaries in your model (perhaps for a physics-informed neural network), you must handle it implicitly, or extend the domain
 with the boundary info. In our experiments, we treat it implicitly and assume that the model will be able to capture the boundary info
 from the input history. 
+
+## Steady-State
+
+The Flash-X simulations take many iterations before they reach a quasi-steady state. This essentially means that the initial timesteps
+may not be physically "valid."  The BubbleML dataset includes these "unsteady" initial states. It is very reasonable (and probably best) to exclude these
+initial steps. In our experiments, we drop the first 30 timesteps for dataset discretized to 1 unit of non-dimensional time. We drop the first 300 timesteps
+for datasets discretized to 0.1 unit of non-dimensional time. Dropping more timesteps may be reasonable. Dropping more than 60 (or 600) is likely overkill.
 
 ## Extending BubbleML
 
