@@ -15,7 +15,7 @@ These models have applications to cooling systems for datacenters (I.e., liquid 
 BubbleML is publicly available and open source. We provide individual links to download the datasets at [dataset downloads](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
 
 ```console
-bash bubbleml/download_all.sh
+bash bubbleml_data/download_all.sh
 ```
 
 This will download all datasets listed in `bubbleml_data/README.md`. Note: the full dataset is over a terabyte in size.
