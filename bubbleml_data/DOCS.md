@@ -3,8 +3,8 @@
 The BubbleML dataset consists of several studies, each composed of multiple simulations. 
 Each of these simulations is stored as one HDF5 file. All of the HDF5 files store relevent tensor data:
 
-1. temperature `'temperature'`
-2. pressure gradient `'pressure'`
+1. temperature `temperature`
+2. pressure gradient `pressure`
 3. x-velocity `velx`
 4. y-velocity `vely`
 5. signed distance function `dfun`
@@ -13,7 +13,7 @@ Each of these simulations is stored as one HDF5 file. All of the HDF5 files stor
 8. real-valud runtime parameters `real-runtime-params`
 9. integer-valued runtime paramters `int-runtime-params`
 
-The fields field can be accessed using h5py. Here, we load the temperature data into a torch tensor.
+The simulation data can be accessed using h5py. Here, we load the temperature data into a torch tensor.
 
 ```python
 import h5py
@@ -24,8 +24,13 @@ with h5py.File(<path-to-sim>) as f:
     real_params = f['real-runtime-params'][:]
 ```
 
-All simulations are laid out in memory identically: `T x X x Y`. This layout makes indexing hdf5 files by time faster
-since each domain will be laid out contiguously in memory. In our experiments, we always index by time.  
+All simulations fields are laid out in memory identically: `T x X x Y`. This layout makes indexing hdf5 files by time faster
+since each domain will be laid out contiguously in memory. In our experiments, we always index by time. Every field will have
+an identical shape:
+
+```python
+f['temperature'][:].shape == f['pressure'][:].shape == ...
+``` 
 
 For a full example of how to read and visualize each field, check [the data loading example](../examples/data_loading.ipynb).
 
@@ -47,9 +52,9 @@ The governing equation for the vapor phase includes the [thermal diffusivity](ht
 2. Density: `mph_rhogas`,
 3. Thermal Conductivity: `mph_thcogas`
 
-In the liquid phase, the thermal diffusivity is just set to one.
+In the liquid phase, the thermal diffusivity is set to one.
 
-The integer runtime parameters includes settings for the resolution. These may be necessary to use if trying to extend BubbleML and want to unblock the dataset. 
+The integer runtime parameters include settings for the resolution and are necessary for unblocking. These may be necessary to use if trying to extend BubbleML and want to unblock the dataset. 
 Integer runtime parameters (`int-runtime-params`):
 1. The number of blocks in the x,y,z directions: `nblockx`, `nblocky`, `nblockz`
 2. The block sizes in the x,y,z directions: `gr_tilesizex`, `gr_tilesizex`, `gr_tilesizex` 
@@ -78,3 +83,11 @@ in the governing equations. The pressure is computed by solving a Poisson equati
 sufficiently robust to be used on its own. In the numerical simulations, this is fine because its main purpose is to correct the velocities, not
 serve as a truly accurate model of pressure. In our experiments, we did not use the pressure, but we make note of it for future users who may be interested. 
 It would be interesting to incorporate the pressure into models and test whether velocity predictions improve.
+
+## Distance function
+
+Each simulation includes a field `dfun`, which is a signed distance function to the nearest bubble.
+When a point is in the vapor phase, `dfun > 0`. When a point is in the liquid phase, `dfun <= 0`. This field can
+be used to get a mask for all liquid points, all vapor points, or points along the bubble interface. In the [example](../examples/data_loading.ipynb),
+we include an example of how to compute the liquid-vapor interface using the same heavy-side function as the simulation.
+We use the distance function to generate a mask of bubble locations (I.e., points in the vapor phase.)
