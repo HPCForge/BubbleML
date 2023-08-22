@@ -1,27 +1,27 @@
 # Optical Flow Models
 ## Model Checkpoints
-The pretrained models can be downloaded by following the instructions in the official repositories [RAFT](https://github.com/princeton-vl/RAFT) and [GMFlow](https://github.com/haofeixu/gmflow)
+The pretrained models can be downloaded by following the instructions in the official repositories [RAFT](https//github.com/princeton-vl/RAFT) and [GMFlow](https//github.com/haofeixu/gmflow)
 The links for the finetuned models are given below. Each link contains the C+B, C+T+B and C+T+S+B model checkpoints respectively.
 
 | Models | Size |
 |----|----|
-| [RAFT Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-gravity.tar.gz) | 56.0 MB |
-| [RAFT Flow Boiling InletVelocity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-velscale.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-subcooled.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-gravity.tar.gz) | 56.0 MB |
-| [GMFlow Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-gravity.tar.gz) | 147.3 MB |
-| [GMFlow Flow Boiling InletVelocity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-velscale.tar.gz) | 146.7 MB |
-| [GMFlow Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-subcooled.tar.gz) | 148.0 MB |
-| [GMFlow Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-saturated.tar.gz) | 148.9 MB |
-| [GMFlow Pool Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-gravity.tar.gz) | 147.9 MB |
+| [RAFT Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-gravity.tar.gz) | 56.0 MB |
+| [RAFT Flow Boiling InletVelocity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-velscale.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-subcooled.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-gravity.tar.gz) | 56.0 MB |
+| [GMFlow Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-gravity.tar.gz) | 147.3 MB |
+| [GMFlow Flow Boiling InletVelocity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-velscale.tar.gz) | 146.7 MB |
+| [GMFlow Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-subcooled.tar.gz) | 148.0 MB |
+| [GMFlow Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-saturated.tar.gz) | 148.9 MB |
+| [GMFlow Pool Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-gravity.tar.gz) | 147.9 MB |
 
 ## Model Benchmarks
 
 ### Pool Boiling Saturated
 |       Model      | Method | Chairs (Val) | Things (Val) | Sintel (Train) - Clean | Sintel (Train) - Final | KITTI (Train) - F1-EPE | KITTI (Train) - F1-all | Boiling (Test) |
-|:----------------:|:------:|:------------:|:------------:|:----------------------:|:----------------------:|:----------------------:|:----------------------:|:--------------:|
+|----------------|------|------------|------------|----------------------|----------------------|----------------------|----------------------|--------------|
 |        C         |  RAFT  |     0.82     |     9.03     |          2.19          |          4.49          |          9.83          |         37.57          |      4.20      |
 |        C         | GMFlow |     0.92     |    10.23     |          3.22          |          4.43          |         17.82          |         56.14          |      4.73      |
 |       C+B        |  RAFT  |     0.91     |    11.22     |          2.55          |          5.16          |         13.7           |         44.44          |     **2.33**   |
@@ -37,7 +37,7 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 
 ### Pool Boiling SubCooled
 |    Model    | Method | Chairs(Val) | Things(Val) | Sintel(Train) - Clean | Sintel(Train) - Final | KITTI(Train) - F1-EPE | KITTI(Train) - F1-all | Boiling(Test) |
-|:-----------:|:------:|:-----------:|:-----------:|:---------------------:|:---------------------:|:---------------------:|:---------------------:|:-------------:|
+|-----------|------|-----------|-----------|---------------------|---------------------|---------------------|---------------------|-------------|
 |      C      |  RAFT  |    0.82     |    9.03     |         2.19          |         4.49          |         9.83          |        37.57          |      2.41     |
 |      C      | GMFlow |    0.92     |   10.23     |         3.22          |         4.43          |        17.82          |        56.14          |      1.92     |
 |     C+B     |  RAFT  |    0.89     |   11.64     |         2.58          |         5.17          |        14.01          |        47.53          |   **0.63**    |
@@ -53,7 +53,7 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 
 ### Pool Boiling Gravity
 |    Model    | Method | Chairs(Val) | Things(Val) | Sintel(Train) - Clean | Sintel(Train) - Final | KITTI(Train) - F1-EPE | KITTI(Train) - F1-all | Boiling(Test) |
-|:-----------:|:------:|:-----------:|:-----------:|:---------------------:|:---------------------:|:---------------------:|:---------------------:|:-------------:|
+|-----------|------|-----------|-----------|---------------------|---------------------|---------------------|---------------------|-------------|
 |      C      |  RAFT  |    0.82     |    9.03     |         2.19          |         4.49          |         9.83          |        37.57          |      3.30     |
 |      C      | GMFlow |    0.92     |   10.23     |         3.22          |         4.43          |        17.82          |        56.14          |      2.40     |
 |     C+B     |  RAFT  |    0.95     |   10.98     |         2.78          |         5.76          |        15.52          |        49.88          |   **0.90**    |
@@ -69,7 +69,7 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 
 ### Flow Boiling Inlet Velocity
 |    Model    | Method | Chairs(Val) | Things(Val) | Sintel(Train) - Clean | Sintel(Train) - Final | KITTI(Train) - F1-EPE | KITTI(Train) - F1-all | Boiling(Test) |
-|:-----------:|:------:|:-----------:|:-----------:|:---------------------:|:---------------------:|:---------------------:|:---------------------:|:-------------:|
+|-----------|------|-----------|-----------|---------------------|---------------------|---------------------|---------------------|-------------|
 |      C      |  RAFT  |    0.82     |    9.03     |         2.19          |         4.49          |         9.83          |        37.57          |     16.01     |
 |      C      | GMFlow |    0.92     |   10.23     |         3.22          |         4.43          |        17.82          |        56.14          |     21.44     |
 |     C+B     |  RAFT  |    1.21     |   14.99     |         3.62          |         6.78          |        22.07          |        60.64          |     10.13     |
@@ -85,7 +85,7 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 
 ### Flow Boiling Gravity
 |    Model    | Method | Chairs(Val) | Things(Val) | Sintel(Train) - Clean | Sintel(Train) - Final | KITTI(Train) - F1-EPE | KITTI(Train) - F1-all | Boiling(Test) |
-|:-----------:|:------:|:-----------:|:-----------:|:---------------------:|:---------------------:|:---------------------:|:---------------------:|:-------------:|
+|-----------|------|-----------|-----------|---------------------|---------------------|---------------------|---------------------|-------------|
 |      C      |  RAFT  |    0.82     |    9.03     |         2.19          |         4.49          |         9.83          |        37.57          |     20.42     |
 |      C      | GMFlow |    0.92     |   10.23     |         3.22          |         4.43          |        17.82          |        56.14          |     14.05     |
 |     C+B     |  RAFT  |    1.14     |   12.65     |         3.30          |         6.13          |        17.94          |        53.76          |      4.45     |
@@ -108,8 +108,8 @@ each link contains checkpoints FNO, UNO and UNet.
 
 | Models | Size |
 |----|----|
-| [Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
-| [Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
-| [Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
+| [Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
+| [Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
+| [Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
 
 ## Model Benchmarks
