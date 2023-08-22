@@ -2,30 +2,26 @@
 
 [![Paper](https://img.shields.io/badge/arXiv-2209.15616-blue)](https://arxiv.org/abs/2307.14623)
 
-A multi-physics dataset of boiling processes.  
-This repository includes downloads, visualizations, and sample applications.  It provides baselines and sample applications for the bubble ML dataset. Videos can be seen in [video](video/) directory. 
+A multiphysics, multiphase dataset of boiling processes.  
+This repository includes downloads, visualizations, and sample applications for the BubbleML dataset. Videos can be seen in [video](video/) directory. This dataset can be used to train operator networks, act as a ground truth for Physics-Informed Neural Networks, or train computer vision models.
+These models have applications to cooling systems for datacenters (I.e., liquid cooling flowing across a GPU) or even cooling nuclear reactors (I.e., a pool of liquid sitting on a heated surface).
+
+Documentation discussing the data fields, format, and relevant parameters can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md). We also provide a set of [examples](examples/) illustrating how to use the dataset.
 
 ![SubCooled Temperature](video/subcooled.gif)
 
-This dataset can be used to train operator networks, act as a ground truth for Physics-Informed Neural Networks, or train computer vision models.
-These models have applications to cooling systems for datacenters (I.e., liquid cooling flowing across a GPU) or even cooling nuclear reactors (I.e., a pool of liquid sitting on a heated surface).
-
-Relevant documentation discussing the data fields, format, and relevant parameters can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md).
 
 ## Download BubbleML
 
-BubbleML is publicly available and open source. We provide individual links to download the each study in [bubbleml_data/README.md](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
-
-```console
-cd bubbleml_data && bash download_all.sh
-```
-
-This will download all datasets listed in `bubbleml_data/README.md`. Note: the full dataset is over a terabyte in size.
+BubbleML is publicly available and open source. We provide links to download each study in [bubbleml_data/README.md](bubbleml_data/README.md).
 
 ## Models
-Checkpoints for all of the benchmark models mentioned in the paper along with ther respective results are listed in the [model zoo](model-zoo/README.md)
 
-## Environment Setup
+Checkpoints for all of the benchmark models mentioned in the paper, along with ther respective results are listed in the [model zoo](model-zoo/README.md)
+
+## Running SciML Code
+
+### Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
 it may also work on AMD GPUs if PyTorch is installed with Rocm support.
 Results have been reproduced on a Linux cluster with V100, A30, and A100 GPUs using PyTorch 2.0 and CUDA 11.7.
@@ -36,16 +32,16 @@ To install dependencies, we recommend creating a conda environment:
 conda env create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
 ```
 
-## Examples
+### Examples
 
 In [examples/](examples/), we provide Jupyter Notebooks showing how to [read and visualize BubbleML](examples/data_loading.ipynb)
 and [train a Fourier Neural Operator](examples/pytorch_training.ipynb). These are stand-alone examples that use a downsampled version of
 Subcooled Pool boiling. These examples are intended to show 1. how to load the dataset, 2. how to read tensors from
 the dataset, and 3. how to setup model training for the dataset. Extended descriptions can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md)
 
-## Running SciML Experiment Code
+### Experiment Code
 
-The sample code uses Hydra to manage different configurations.
+Our sample application code uses Hydra to manage different configurations.
 For example, we treat each simulation type as a dataset: `conf/dataset/*.yaml`.
 Similarly, each model is treated as a separate experiment: `conf/experiment/*.yaml`.
 
@@ -82,7 +78,7 @@ python src/train.py \
 ```
 ## Running Optical Flow Benchmarks
 
-Please refer [Optical Flow](optical_flow/README.md)
+Please refer to the [Optical Flow README.md](optical_flow/README.md)
 
 ## Citation
 
