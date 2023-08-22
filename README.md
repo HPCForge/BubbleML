@@ -12,7 +12,14 @@ These models have applications to cooling systems for datacenters (I.e., liquid 
 
 ## Download BubbleML
 
-BubbleML is publicly available and open source. We provide [dataset and checkpoint downloads](dataset/README.md)
+BubbleML is publicly available and open source. We provide individual links to download the datasets at [dataset downloads](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script ==download_all.sh==
+```console
+bash download_all.sh
+```
+This will download all datasets inside the ==bubbleml_data== folder. Make sure you have enough space!(1TB!)
+
+## Models
+Checkpoints for all the benchmark models mentioned in the paper along with the respective results can be found at the [model zoo](model-zoo/README.md)
 
 ## Environment Setup
 The code assumes access to a fairly modern Nvidia GPU, though
