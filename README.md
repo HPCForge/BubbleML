@@ -17,7 +17,7 @@ Relevant documentation discussing the data fields, format, and relevant paramete
 BubbleML is publicly available and open source. We provide individual links to download the each study in [bubbleml_data/README.md](bubbleml_data/README.md). The dataset can also be downloaded all at once by running the bash script 
 
 ```console
-cd bubbleml_data && bubbleml_data/download_all.sh
+cd bubbleml_data && bash download_all.sh
 ```
 
 This will download all datasets listed in `bubbleml_data/README.md`. Note: the full dataset is over a terabyte in size.
