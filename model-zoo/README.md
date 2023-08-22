@@ -122,7 +122,7 @@ be added soon.
 
 ### Pool Boiling Subcooled
 
-|            | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | FNO   | UNO   | FFNO  | GFNO  |
+|            | UNet-bench | UNet-mod | FNO   | UNO   | FFNO  | GFNO  |
 |------------|-----------------------|--------------------|-------|-------|-------|-------|
 | Rel. Err.  | **0.036**             | 0.051              | 0.052 | 0.062 | 0.050 | 0.071 |
 | RMSE       | **0.035**             | 0.049              | 0.050 | 0.059 | 0.048 | 0.068 |
@@ -135,7 +135,7 @@ be added soon.
 
 ### Pool Boiling Saturated
 
-|            | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | FNO   | UNO   | FFNO  | GFNO  |
+|            | UNet-bench | UNet-mod | FNO   | UNO   | FFNO  | GFNO  |
 |------------|-----------------------|--------------------|-------|-------|-------|-------|
 | Rel. Err.  | **0.035**             | 0.039              | 0.052 | 0.072 | 0.053 | 0.066 |
 | RMSE       | **0.035**             | 0.039              | 0.052 | 0.071 | 0.052 | 0.065 |
@@ -149,7 +149,7 @@ be added soon.
 
 ### Pool Boiling Gravity
 
-|            | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | FNO   | UNO   | FFNO  | GFNO  |
+|            | UNet-bench | UNet-mod | FNO   | UNO   | FFNO  | GFNO  |
 |------------|-----------------------|--------------------|-------|-------|-------|-------|
 | Rel. Err.  | **0.042**             | 0.051              | 0.062 | 0.081 | 0.061 | 0.124 |
 | RMSE       | **0.040**             | 0.049              | 0.062 | 0.077 | 0.058 | 0.118 |
@@ -162,7 +162,7 @@ be added soon.
 
 ### Flow Boiling Gravity
 
-|            | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | FNO   | UNO   |
+|            | UNet-bench | UNet-mod | FNO   | UNO   |
 |------------|-----------------------|--------------------|-------|-------|
 | Rel. Err.  | **0.055**             | 0.095              | 0.134 | 0.157 |
 | RMSE       | **0.051**             | 0.088              | 0.123 | 0.144 |
@@ -176,7 +176,7 @@ be added soon.
 
 ### Flow Boiling Inlet Velocity
 
-|            | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | FNO   | UNO   |
+|            | UNet-bench | UNet-mod | FNO   | UNO   |
 |------------|-----------------------|--------------------|-------|-------|
 | Rel. Err.  | **0.106**             | 0.122              | 0.202 | 0.225 |
 | RMSE       | **0.097**             | 0.111              | 0.184 | 0.205 |
@@ -189,7 +189,7 @@ be added soon.
 
 ### Velocity + Temp: Pool Boiling Subcooled
 
-|           | Metric   | UNet$_{\text{bench}}$ | UNet$_{\text{mod}}$ | P-UNet$_{\text{mod}}$ | FNO   | UNO   | FFNO  |
+|           | Metric   | UNet-bench | UNet-mod | P-UNet-mod | FNO   | UNO   | FFNO  |
 |-----------|----------|-----------------------|--------------------|------------------------|-------|-------|-------|
 | Temp.     | Rel. Err. | **0.106**             | 0.074              | **0.040**              | 0.066 | 0.322 | 0.067 |
 |           | RMSE     | **0.097**             | 0.072              | **0.039**              | 0.064 | 0.051 | 0.065 |
