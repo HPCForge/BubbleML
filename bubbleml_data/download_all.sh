@@ -1,7 +1,5 @@
 #!/bin/bash
 
-mkdir bubbleml_data && cd bubbleml_data
-
 # Download the Single Bubble Simulation
 wget https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/single-bubble.tar.gz 
 tar -xvzf single-bubble.tar.gz && rm single-bubble.tar.gz
