@@ -17,3 +17,11 @@ BubbleML is hosted on AWS and can be publicly downloaded. Each boiling study can
 | [3D Pool Boiling ISS Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-iss-gravity-3d.tar.gz) | 62.6 GB |
 | [3D Flow Boiling Earth Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/flow-boiling-earth-gravity-3d.tar.gz) | 93.9 GB |
 
+
+The studies can also be downloaded in bulk by running the bash script 
+
+```console
+bash download_all.sh
+```
+
+This will download all datasets listed above. Note: the full dataset is over a terabyte in size.
