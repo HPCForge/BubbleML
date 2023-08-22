@@ -22,4 +22,3 @@ dependencies:
     - zarr
     - opt_einsum
     - wandb
-    - git+https://github.com/pySTEPS/pysteps
