@@ -3,25 +3,43 @@ Estimate the radially averaged power spectrum
 """
 
 import matplotlib.pyplot as plt
-from pysteps.utils.spectral import rapsd
 import torch
 import numpy as np
 from scipy import stats
 from scipy import signal
 
-# Note: this is data for Temp-only PB_Gravity!
 output_tensors = {
-    'Simulation': 'scripts/data/sim_output.pt',
-    'UNet$_{bench}$': 'scripts/data/unet2d_output.pt',
-    'UNO': 'scripts/data/uno_output.pt',
-    'FNO': 'scripts/data/fno_output.pt'
+    'Simulation Temperature': 'scripts/data/vel_unet_mod_push/velx_label.pt',
+    'UNet$_{mod}$ Temperature': 'scripts/data/vel_unet_mod/velx_output.pt',
+    'P-UNet$_{mod}$ Temperature': 'scripts/data/vel_unet_mod_push/velx_output.pt',
+    'UNO Temperature': 'scripts/data/uno/velx_output.pt'
+}
+
+output_tensors = {
+    'Simulation': 'scripts/data/vel_unet_mod_push/sim_ouput.pt',
+    'UNet$_{mod}$': 'scripts/data/vel_unet_mod/model_ouput.pt',
+    'P-UNet$_{mod}$': 'scripts/data/vel_unet_mod_push/model_ouput.pt',
+    'UNO': 'scripts/data/uno/model_ouput.pt'
 }
 
 data = [(name, torch.load(pth)) for (name, pth) in output_tensors.items()]
 
 power = {}
 
-for time in range(0, 151, 2):
+plt.rc("font", family="serif", size=18, weight="bold")
+plt.rc("axes", labelweight="bold")
+
+steps = [0, 15, 30, 60]
+
+fig, ax = plt.subplots(1, len(steps), figsize=(15, 5))
+
+for idx, time in enumerate(steps):
+    ax[idx].set_title(f'Step {time}')
+    ax[idx].set_yscale('log')
+    if idx == 0:
+        ax[idx].set_ylabel('Magnitude')
+    ax[idx].set_xlabel('Frequency')
+    #ax[idx].set_ylim([0, 100000])
     for name, tensor in data:
         print(tensor.size())
         timestep = tensor[time].numpy()
@@ -43,16 +61,17 @@ for time in range(0, 151, 2):
         Abins, _, _ = stats.binned_statistic(knrm, fourier_amp,
                                              statistic='mean',
                                              bins=kbins)
-        N = 5
+        N = 8
         f = np.array([1.0 / N for _ in range(N)])
-        plt.plot(kvals, signal.lfilter(f, 1, Abins), label=name, linewidth=2)
-        plt.yscale('log')
-        plt.ylabel('Magnitude')
-        plt.xlabel('Frequency')
+
+
+        ax[idx].plot(kvals, signal.lfilter(f, 1, Abins), label=name, linewidth=2)
 
         #plt.plot(psd[::-1], label=name)
         #plt.plot(freq, label=name+'freq')
-    plt.legend()
-    plt.savefig(f'psd_time{time}')
-    plt.close()
+#plt.tight_layout()
+plt.legend(fontsize=14)
+plt.tight_layout()
+plt.savefig(f'psd_time.png')
+plt.close()
 
