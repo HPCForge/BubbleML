@@ -1,7 +1,9 @@
 # BubbleML Documentation
 
 The BubbleML dataset consists of several studies, each composed of multiple simulations. 
-Each of these simulations is stored as one HDF5 file. All of the HDF5 files store relevent tensor data:
+Each of these simulations is stored as one HDF5 file. All of the HDF5 files store relevent tensor data.
+Each field is stored as a separate [HDF5 dataset](https://docs.h5py.org/en/stable/high/dataset.html) in
+the simulation file.
 
 1. temperature `temperature`
 2. pressure gradient `pressure`
@@ -20,12 +22,18 @@ import h5py
 import torch
 
 with h5py.File(<path-to-sim>) as f:
-    temp = torch.from_numpy(f['temp'][:])
+    # load temperature into a torch tensor
+    temp = torch.from_numpy(f['temperature'][:])
+    # load runtime params into a numpy array
     real_params = f['real-runtime-params'][:]
+
+    # 3 dimensions
+    print(temp.dim())
 ```
 
-All simulations fields are laid out in memory identically: `T x X x Y`. This layout makes indexing hdf5 files by time faster
-since each domain will be laid out contiguously in memory. In our experiments, we always index by time. Every field will have
+All simulations fields are laid out in memory identically: `T x X x Y`. The first dimension is time, the second is the rows of
+the domain, and the third is the columns of the domain. This layout makes indexing hdf5 files by time faster
+since each domain will be laid out contiguously in memory. In our experiments, we always index by time. Every tensor field will have
 an identical shape:
 
 ```python
@@ -36,7 +44,7 @@ For a full example of how to read and visualize each field, check [the data load
 
 ## Metadata (runtime-params)
 
-There is a lot of metadata associated with each of the Flash-X simulations. Some settings may be difficult to interpret and most will be unnecessary. We list out keys that are particularly relevant. Some of these settings, like the Reynolds and Prandtl number are important parameters used for the governing equation. These will be critical when implementing a physics-informed model.
+There is a lot of metadata associated with each of the Flash-X simulations. The metadata is stored as a set of key-value pairs. The key is essentially some variable name, like `ins_invreynolds` is the inverse Reynolds number. Some settings may be difficult to interpret and many will be unnecessary for most users. We list out keys that are particularly relevant. Some of these settings, like the Reynolds and Prandtl number are important parameters used for the governing equation. These will be critical when implementing a physics-informed model. Here, we point out some of the important metadata keys:
 
 Real runtime parameters (`real-runtime-params`):
 1. Inverse Reynold's number: `ins_invreynolds`
@@ -65,23 +73,26 @@ The resolution in the x-direction can be computed using `nblockx * gr_tilesizex`
 
 The temperature is stored in a non-dimensionalized form. This means that the stored temperature will always range from [0-1].
 In studies where we vary the heater temperature, the temperature ranges from the liquid temperature, to the heater temperature.
-So, in each case, the heater tempeature is normalized to 1. This requires re-dimensionalizing the data. This is simple and can just be
+So, in each case, the heater tempeature is normalized to 1. Directly inputting the non-dimensionalized values to a neural network
+may be a problem, since a heater temperature of 80 degrees would appear the same as a heater temperature of 100 degrees. To resolve this,
+you should re-dimensionalize the temperature field. This is simple and can just be
 done by multiplting the non-dimensionalized temperature by the heater temperature:
 
 ```python
+temp = sim_file['temperature][:]
 heater_temp = get_heater_temp(sim_file)
 temp *= heater_temp
 ```
 
-Once this is done, it should be safe to use. In the studies where the heater temperature is constant (i.e., where we vary the gravity
-or inlet velocity), this is unnecessary.
+Once this is done, it should be safe to use. In the studies where the heater temperature is constant, the studies we vary the gravity
+or inlet velocity), this redimensionalization is unnecessary.
 
 ## Pressure
 
 Each of the simulation files stores the pressure gradient, not the actual pressure. This is because only the pressure gradient is used
 in the governing equations. The pressure is computed by solving a Poisson equation. We have noticed that the Poisson solver may not be
 sufficiently robust to be used on its own. In the numerical simulations, this is fine because its main purpose is to correct the velocities, not
-serve as a truly accurate model of pressure. In our experiments, we did not use the pressure, but we make note of it for future users who may be interested. 
+serve as a truly accurate model of pressure. In our experiments, *we did not use the pressure*, but we make note of it for future users who may be interested. 
 It would be interesting to incorporate the pressure into models and test whether velocity predictions improve. The poisson solver will likely
 be improved in a future version of Flash-X.
 
@@ -96,11 +107,16 @@ We use the distance function to generate a mask of bubble locations (I.e., point
 ## The Domain Boundary
 
 The simulation data we provide does not include the boundary. For instance,
-`f['temperature'][:, 0, 0]` is not indexing the heater. Instead, it is indexing the cell just above the heater. Similarly, 
-`f['temperature'][:, 0, 10]` is not indexing the wall, it is indexing the cell to the right of the wall. If you want to explicitly
+`f['temperature'][:, 0, 0]` (row 0, column 0) is not indexing the heater. Instead, it is indexing the cell just above the heater. Similarly, 
+`f['temperature'][:, 0, 10]` (row 0, column 10) is not indexing the left wall, it is indexing the cell to the right of the wall. If you want to explicitly
 account for boundaries in your model (perhaps for a physics-informed neural network), you must handle it implicitly, or extend the domain
 with the boundary info. In our experiments, we treat it implicitly and assume that the model will be able to capture the boundary info
 from the input history. 
+
+Pool boiling experiments have walls on the left and right sides, and an outlet at the top. 
+Flow boiling experiments have an inlet on the left and an outlet on the right. The top is a no-slip wall. In
+both cases, the heater is always along the bottom of the domain. The domain boundary is fixed for every 
+timestep: the heater temperature does not change, a wall is always a wall, and an outlet is always an outlet.
 
 ## Steady-State
 

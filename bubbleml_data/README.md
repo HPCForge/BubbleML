@@ -17,6 +17,23 @@ BubbleML is hosted on AWS and can be publicly downloaded. Each boiling study can
 | [3D Pool Boiling ISS Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/pool-boiling-iss-gravity-3d.tar.gz) | 62.6 GB |
 | [3D Flow Boiling Earth Gravity](https://bubble-ml-simulations.s3.us-east-2.amazonaws.com/flow-boiling-earth-gravity-3d.tar.gz) | 93.9 GB |
 
+Each download is a `.tar.gz`. They can be unzipped using the command 
+
+```console
+tar -xvf <study>.tar.gz -C /path/to/BubbleML/<study>/
+```
+
+After unzipping, you will see a collection of hdf5 files in `/path/to/BubbleML/<study>/.
+Each hdf5 file corresponds to one simulation. The hdf5 files can be loaded with common libraries,
+such as `h5py`. 
+
+## Documentation and Examples
+
+We provide (documentation)[DOCS.md] describing the different hdf5 datasets in each simulation file.
+There are also (examples)[../examples] showing how to load a BubbleML simulation, list out it's datasets, 
+visualize the different simulation fields, and access the metadata. 
+
+## Bulk Download
 
 The studies can also be downloaded in bulk by running the bash script 
 
