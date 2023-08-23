@@ -15,3 +15,13 @@ We do not apply the training strategies used in our experiments, this is intende
 example of how to use BubbleML, not reproduce our results. This example shows how to setup a
 PyTorch dataset for each HDF5 file and how to use a `ConcatDataset` to combine them. It then
 shows how to build a Fourier Neural Operator, run a training loop, and visualize the results.
+
+## Running the examples:
+
+The SciML conda environment includes jupyterlab as a dependency, so it can run the example notebooks.
+In the project root directory, you can create the conda environment with pytorch, neuraloperator,
+and jupyter. 
+
+```console
+conda env create -n bubble-sciml -f conda/pytorch-2.0.1-cuda-11.7.yaml
+```
