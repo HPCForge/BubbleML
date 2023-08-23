@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
-from .metrics import compute_metrics, write_metrics
-from .losses import LpLoss
+from .metrics import compute_metrics, write_metrics, write_PDE_metrics
+from .losses import LpLoss, temp_stokes_loss2D
 from .plt_util import plt_temp, plt_iter_mae, plt_vel
 from .heatflux import heatflux
 from .dist_utils import local_rank
@@ -251,7 +251,8 @@ class PushVelPDETrainer:
                  lr_scheduler,
                  val_variable,
                  writer,
-                 cfg):
+                 cfg,
+                 dt = 0.1):
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
@@ -265,6 +266,7 @@ class PushVelPDETrainer:
         self.max_push_forward_steps = max_push_forward_steps
         self.future_window = future_window
         self.resolution_scaling = resolution_scaling
+        self.dt = dt
         self.use_coords = cfg.train.use_coords
 
     def train(self, max_epochs):
@@ -356,14 +358,15 @@ class PushVelPDETrainer:
 
             temp_label, vel_label = self.downsample_domain(temp_label, vel_label)
 
-            u = 0 #will define properly soon
-            v = 0
+            u = torch.index_select(vel_pred, 1, torch.arange(0, self.future_window*2, 2))
+            v = torch.index_select(vel_pred, 1, torch.arange(1, (self.future_window*2)+1, 2))
             T_prev = temp_input[:, -1]
-            dt = 0
 
             temp_loss = self.loss(temp_pred_default_scale, temp_label)
             vel_loss = self.loss(vel_pred_default_scale, vel_label)
-            loss = (temp_loss + vel_loss) / 2
+            temp_pde_loss = temp_stokes_loss2D(T=temp_pred, u=u, v=v, T_prev=T_prev, resolution_scaling=self.resolution_scaling, dt=self.dt, future_window=self.future_window)
+            loss = (temp_loss + vel_loss + temp_pde_loss) / 3
+
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -373,6 +376,7 @@ class PushVelPDETrainer:
             global_iter = epoch * len(self.train_dataloader) + iter
             write_metrics(temp_pred_default_scale, temp_label, global_iter, 'TrainTemp', self.writer)
             write_metrics(vel_pred_default_scale, vel_label, global_iter, 'TrainVel', self.writer)
+            write_PDE_metrics(temp_pde_loss, global_iter, 'TrainPDE', self.writer)
             del temp, vel, temp_label, vel_label
 
     def val_step(self, epoch):
@@ -388,14 +392,22 @@ class PushVelPDETrainer:
             vel_label = vel_label[:, 0].to(local_rank()).float()
 
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
-                temp_loss = F.mse_loss(temp_pred, temp_label)
-                vel_loss = F.mse_loss(vel_pred, vel_label)
-                loss = (temp_loss + vel_loss) / 2
+                temp_pred, temp_pred_default_scale, vel_pred, vel_pred_default_scale = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+
+                u = torch.index_select(vel_pred, 1, torch.arange(0, self.future_window*2, 2))
+                v = torch.index_select(vel_pred, 1, torch.arange(1, (self.future_window*2)+1, 2))
+                T_prev = temp[:, 0, -1] #THIS NEEDS TO BE CHECKED
+
+                temp_loss = F.mse_loss(temp_pred_default_scale, temp_label)
+                vel_loss = F.mse_loss(vel_pred_default_scale, vel_label)
+                temp_pde_loss = temp_stokes_loss2D(T=temp_pred, u=u, v=v, T_prev=T_prev, resolution_scaling=self.resolution_scaling, dt=self.dt, future_window=self.future_window)
+
+                loss = (temp_loss + vel_loss + temp_pde_loss) / 3
             print(f'val loss: {loss}')
             global_iter = epoch * len(self.val_dataloader) + iter
-            write_metrics(temp_pred, temp_label, global_iter, 'ValTemp', self.writer)
-            write_metrics(vel_pred, vel_label, global_iter, 'ValVel', self.writer)
+            write_metrics(temp_pred_default_scale, temp_label, global_iter, 'ValTemp', self.writer)
+            write_metrics(vel_pred_default_scale, vel_label, global_iter, 'ValVel', self.writer)
+            write_PDE_metrics(temp_pde_loss, global_iter, 'ValPDE', self.writer)
             del temp, vel, temp_label, vel_label
 
     def test(self, dataset, max_time_limit=200):
@@ -415,7 +427,7 @@ class PushVelPDETrainer:
             temp_label = temp_label[0].to(local_rank()).float()
             vel_label = vel_label[0].to(local_rank()).float()
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+                _, temp_pred, _, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
                 temp_pred = temp_pred.squeeze(0)
                 vel_pred = vel_pred.squeeze(0)
                 dataset.write_temp(temp_pred, timestep)

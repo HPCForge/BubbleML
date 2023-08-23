@@ -1,4 +1,5 @@
 import os
+import torch
 from neuralop.models import UNO
 from .PINO_util.fno import FNO
 from .factorized_fno.factorized_fno import FNOFactorized2DBlock 
@@ -21,6 +22,8 @@ _FFNO = 'factorized_fno'
 
 _GFNO = 'gfno'
 
+_PIFNO = 'pifno'
+
 _MODEL_LIST = [
     _UNET2D,
     _UNET_MOD_ATTN,
@@ -28,7 +31,8 @@ _MODEL_LIST = [
     _FNO,
     _UNO,
     _FFNO,
-    _GFNO
+    _GFNO,
+    _PIFNO
 ]
 
 def get_model(model_name, in_channels, out_channels, exp):
@@ -88,6 +92,21 @@ def get_model(model_name, in_channels, out_channels, exp):
                        modes=exp.model.modes,
                        width=exp.model.width,
                        reflection=exp.model.reflection) 
+    elif model_name == _PIFNO:
+        output_scaling_factor = torch.ones(exp.model.n_layers)
+        output_scaling_factor[-1] = exp.model.output_scaling_factor
+        model = FNO(n_modes=exp.model.n_modes,
+                    hidden_channels=exp.model.hidden_channels,
+                    domain_padding=exp.model.domain_padding,
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    n_layers=exp.model.n_layers,
+                    norm=exp.model.norm,
+                    factorization='tucker',
+                    implementation='factorized',
+                    rank=exp.model.rank,
+                    output_scaling_factor=output_scaling_factor,
+                    render_default_scale=True)
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()

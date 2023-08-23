@@ -31,7 +31,7 @@ from op_lib.hdf5_dataset import (
 
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
-from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib.push_vel_trainer import PushVelTrainer, PushVelPDETrainer
 from op_lib import dist_utils
 
 from models.get_model import get_model
@@ -177,17 +177,31 @@ def train_app(cfg):
     # https://github.com/pytorch/pytorch/issues/76113
     lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
 
-    TrainerClass = trainer_map[exp.torch_dataset_name]
-    trainer = TrainerClass(model,
-                           exp.train.future_window,
-                           exp.train.push_forward_steps,
-                           train_dataloader,
-                           val_dataloader,
-                           optimizer,
-                           lr_scheduler,
-                           val_variable,
-                           writer,
-                           exp)
+    if model_name == 'pifno':
+        TrainerClass = PushVelPDETrainer
+        trainer = TrainerClass(model,
+                            exp.train.future_window,
+                            exp.train.push_forward_steps,
+                            train_dataloader,
+                            val_dataloader,
+                            optimizer,
+                            lr_scheduler,
+                            val_variable,
+                            writer,
+                            exp,
+                            resolution_scaling=exp.model.output_scaling_factor)
+    else:
+        TrainerClass = trainer_map[exp.torch_dataset_name]
+        trainer = TrainerClass(model,
+                            exp.train.future_window,
+                            exp.train.push_forward_steps,
+                            train_dataloader,
+                            val_dataloader,
+                            optimizer,
+                            lr_scheduler,
+                            val_variable,
+                            writer,
+                            exp)
     print(trainer)
 
     if cfg.train and not cfg.model_checkpoint:
