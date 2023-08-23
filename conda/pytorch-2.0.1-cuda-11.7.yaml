@@ -22,3 +22,4 @@ dependencies:
     - zarr
     - opt_einsum
     - wandb
+    - jupyterlab
