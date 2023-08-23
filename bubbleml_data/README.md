@@ -29,8 +29,8 @@ such as `h5py`.
 
 ## Documentation and Examples
 
-We provide (documentation)[DOCS.md] describing the different hdf5 datasets in each simulation file.
-There are also (examples)[../examples] showing how to load a BubbleML simulation, list out it's datasets, 
+We provide [documentation](DOCS.md) describing the different hdf5 datasets in each simulation file.
+There are also [examples](../examples) showing how to load a BubbleML simulation, list out it's datasets, 
 visualize the different simulation fields, and access the metadata. 
 
 ## Bulk Download
