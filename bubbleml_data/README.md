@@ -33,6 +33,12 @@ We provide [documentation](DOCS.md) describing the different hdf5 datasets in ea
 There are also [examples](../examples) showing how to load a BubbleML simulation, list out it's datasets, 
 visualize the different simulation fields, and access the metadata. 
 
+## Data Generation and Extension
+
+We provide a separate [reproducibility capsule](https://github.com/Lab-Notebooks/Outflow-Forcing-BubbleML) for running Flash-X simulations.
+This repo includes all of the submission files BubbleML used. Modifying these will be a straightforward way to generate
+new data and extend BubbleML. Note, Flash-X is designed for large-scale, long-running simulations so there are dependencies on other projects like MPI.
+
 ## Bulk Download
 
 The studies can also be downloaded in bulk by running the bash script 
@@ -42,3 +48,4 @@ bash download_all.sh
 ```
 
 This will download all datasets listed above. Note: the full dataset is over a terabyte in size.
+
