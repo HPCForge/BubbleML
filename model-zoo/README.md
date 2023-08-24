@@ -108,15 +108,17 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 # SciML Models
 ## Model Checkpoints
 
-The model checkpoints are organized based on the dataset they were trained on. So,
-each link contains checkpoints for FNO, UNO and UNet. The remaining checkpoints will
-be added soon.
+The model checkpoints are organized based on the dataset they were trained on. All model weights are included in
+the `.tar.gz`.
 
 | Models | Size |
 |----|----|
-| [Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 237.0 MB |
-| [Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 208.9 MB |
-| [Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 208.9 MB |
+| [Pool Boiling SubCooled](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 4.5 GB |
+| [Pool Boiling Saturated](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
+| [Pool Boiling Gravity](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
+| [Flow Boiling Gravity](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 4.5 GB |
+| [Flow Boiling InletVel](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_inletvel.tar.gz) | 4.5 GB |
+| [Pool Boiling SubCooled 0.1](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled_0.1.tar.gz) | 5.7 GB |
 
 ## Model Benchmarks
 
