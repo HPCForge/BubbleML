@@ -2,7 +2,7 @@
 
 This directory contains examples of how to use BubbleML that are much simpler
 than our experiment code. We use a downsampled version of several Subcooled Pool Boiling datasets.
-Each simulation uses every 8-th pixel, so it is much smaller and faster to train models. These
+Each simulation has had its resolution downsampled to 1/8th size, so it is much smaller and faster to train models. These
 downsampled datasets have the exact same keys and metadata as the "true" datasets. The only difference
 is the domain resolution.
 
