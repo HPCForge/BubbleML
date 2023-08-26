@@ -189,7 +189,9 @@ def train_app(cfg):
                             val_variable,
                             writer,
                             exp,
-                            resolution_scaling=exp.model.output_scaling_factor)
+                            resolution_scaling=exp.model.output_scaling_factor,
+                            dt=exp.train.dt,
+                            pde_loss_ratio=exp.train.pde_loss_ratio)
     else:
         TrainerClass = trainer_map[exp.torch_dataset_name]
         trainer = TrainerClass(model,

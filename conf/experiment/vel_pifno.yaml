@@ -12,6 +12,8 @@ train:
   use_coords: True
   noise: True
   downsample_factor: 0.5
+  dt: 0.1
+  pde_loss_ratio: 0.33
 
 model:
   model_name: pifno

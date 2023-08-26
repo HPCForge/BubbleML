@@ -252,6 +252,7 @@ class PushVelPDETrainer:
                  val_variable,
                  writer,
                  cfg,
+                 pde_loss_ratio,
                  dt = 0.1):
         self.model = model
         self.train_dataloader = train_dataloader
@@ -267,6 +268,7 @@ class PushVelPDETrainer:
         self.future_window = future_window
         self.resolution_scaling = resolution_scaling
         self.dt = dt
+        self.pde_loss_ratio = pde_loss_ratio
         self.use_coords = cfg.train.use_coords
 
     def train(self, max_epochs):
@@ -362,10 +364,12 @@ class PushVelPDETrainer:
             v = torch.index_select(vel_pred, 1, torch.arange(1, (self.future_window*2)+1, 2))
             T_prev = temp_input[:, -1]
 
+            dfun_out = 0#CHANGE
+
             temp_loss = self.loss(temp_pred_default_scale, temp_label)
             vel_loss = self.loss(vel_pred_default_scale, vel_label)
             temp_pde_loss = temp_stokes_loss2D(T=temp_pred, u=u, v=v, T_prev=T_prev, resolution_scaling=self.resolution_scaling, dt=self.dt, future_window=self.future_window)
-            loss = (temp_loss + vel_loss + temp_pde_loss) / 3
+            loss = ((temp_loss + vel_loss)*((1-self.pde_loss_ratio)/2)) + (temp_pde_loss*self.pde_loss_ratio)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -396,13 +400,13 @@ class PushVelPDETrainer:
 
                 u = torch.index_select(vel_pred, 1, torch.arange(0, self.future_window*2, 2))
                 v = torch.index_select(vel_pred, 1, torch.arange(1, (self.future_window*2)+1, 2))
-                T_prev = temp[:, 0, -1] #THIS NEEDS TO BE CHECKED
+                T_prev = temp[:, 0, -1]
 
                 temp_loss = F.mse_loss(temp_pred_default_scale, temp_label)
                 vel_loss = F.mse_loss(vel_pred_default_scale, vel_label)
                 temp_pde_loss = temp_stokes_loss2D(T=temp_pred, u=u, v=v, T_prev=T_prev, resolution_scaling=self.resolution_scaling, dt=self.dt, future_window=self.future_window)
 
-                loss = (temp_loss + vel_loss + temp_pde_loss) / 3
+                loss = ((temp_loss + vel_loss)*((1-self.pde_loss_ratio)/2)) + (temp_pde_loss*self.pde_loss_ratio)
             print(f'val loss: {loss}')
             global_iter = epoch * len(self.val_dataloader) + iter
             write_metrics(temp_pred_default_scale, temp_label, global_iter, 'ValTemp', self.writer)

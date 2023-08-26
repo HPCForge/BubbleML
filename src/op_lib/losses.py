@@ -183,15 +183,15 @@ class H1Loss(object):
     def __call__(self, x, y, h=None):
         return self.rel(x, y, h=h)
 
-def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt, future_window):
+def temp_stokes_loss2D(T, u, v, T_prev, dfun, resolution_scaling, dt, future_window):
     batchsize = T.size(0)
+    ny = T.size(2)
     nx = T.size(3)
-    ny = T.size(4)
     
     device = T.device
-    T = T.reshape(batchsize, future_window, nx, ny)
-    u = u.reshape(batchsize, future_window, nx, ny)
-    v = v.reshape(batchsize, future_window, nx, ny)
+    T = T.reshape(batchsize, future_window, ny, nx)
+    u = u.reshape(batchsize, future_window, ny, nx)
+    v = v.reshape(batchsize, future_window, ny, nx)
 
     if T_prev.size(-2) != T.size(-2) or T_prev.size(-1) != T.size(-1):
         T_prev = resample(T_prev, resolution_scaling, [-2, -1], output_shape=T.shape) 
@@ -205,9 +205,9 @@ def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt, future_window):
     Nx = nx
     Ny = ny
     k_x = torch.cat((torch.arange(start=0, end=k_maxx, step=1, device=device),
-                     torch.arange(start=-k_maxx, end=0, step=1, device=device)), 0).reshape(Nx, 1).repeat(1, Ny).reshape(1,1,Nx,Ny)
+                     torch.arange(start=-k_maxx, end=0, step=1, device=device)), 0).reshape(1, Nx).repeat(Ny, 1).reshape(1,1,Ny,Nx)
     k_y = torch.cat((torch.arange(start=0, end=k_maxy, step=1, device=device),
-                     torch.arange(start=-k_maxy, end=0, step=1, device=device)), 0).reshape(1, Ny).repeat(Nx, 1).reshape(1,1,Nx,Ny)
+                     torch.arange(start=-k_maxy, end=0, step=1, device=device)), 0).reshape(Ny, 1).repeat(1, Nx).reshape(1,1,Ny,Nx)
     #Laplacian in Fourier space
     lap = (k_x ** 2 + k_y ** 2)
     lap[0, 0, 0, 0] = 1.0
@@ -216,13 +216,20 @@ def temp_stokes_loss2D(T, u, v, T_prev, resolution_scaling, dt, future_window):
     Tx_h = 1j * k_x * T_h
     Tlap_h = lap * T_h
 
-    Txu_conv_h = F.conv2d(u_h, Tx_h, stride = 1, padding = (0,0))*(1/(4*(math.pi**2)))
-    Tyv_conv_h = F.conv2d(v_h, Ty_h, stride = 1, padding = (0,0))*(1/(4*(math.pi**2)))
+    Txu_conv_h = F.conv2d(u_h, torch.flip(Tx_h, dims = [-2,-1]), stride = 1)*(1/(4*(math.pi**2)))
+    Tyv_conv_h = F.conv2d(v_h, torch.flip(Ty_h, dims = [-2,-1]), stride = 1)*(1/(4*(math.pi**2)))
 
     gradTdotu_h = Tyv_conv_h + Txu_conv_h
 
-    gradTdotu = torch.fft.irfft2(gradTdotu_h[:, :, :k_maxy + 1], dim=[-2, -1])
-    Tlap = torch.fft.irfft2(Tlap_h[:, :, :k_maxy+1], dim=[-2,-1])
+    gradTdotu = torch.fft.irfft2(gradTdotu_h[:, :, :, :k_maxx + 1], dim=[-2, -1])
+    Tlap = torch.fft.irfft2(Tlap_h[:, :, :, :k_maxx + 1], dim=[-2,-1])
+
+    a_prime = 25
+    Re = 238
+    Pr = 8.4
+    lap_constant = torch.where(dfun > 0, a_prime*(1/(Re*Pr)), (1/(Re*Pr)))
+
+    Tlap = Tlap*lap_constant
 
     T = torch.cat((T_prev, T), 1)
     Tdt = (T[:, 1:] - T[:, :-1])/dt
