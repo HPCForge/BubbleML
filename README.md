@@ -3,12 +3,13 @@
 [![Paper](https://img.shields.io/badge/arXiv-2209.15616-blue)](https://arxiv.org/abs/2307.14623)
 
 A multiphysics, multiphase dataset of boiling processes.  
-This repository includes downloads, visualizations, and sample applications for the BubbleML dataset. Videos can be seen in [video](video/) directory. This dataset can be used to train operator networks, act as a ground truth for Physics-Informed Neural Networks, or train computer vision models.
-These models have applications to cooling systems for datacenters (I.e., liquid cooling flowing across a GPU) or even cooling nuclear reactors (I.e., a pool of liquid sitting on a heated surface).
-
-Documentation discussing the data fields, format, and relevant parameters can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md). We also provide a set of [examples](examples/) illustrating how to use the dataset.
+These models could be applied to model datacenter cooling systems. For instance, liquid cooling flowing across a GPU. or even cooling nuclear reactors: a pool of liquid sitting on a heated surface.
 
 ![SubCooled Temperature](video/subcooled.gif)
+
+## Documentation and Examples
+
+Documentation discussing the data fields, format, and relevant parameters can be found in [bubbleml_data/DOCS.md](bubbleml_data/DOCS.md). We also provide a set of [examples](examples/) illustrating how to use the dataset.
 
 
 ## Download BubbleML
