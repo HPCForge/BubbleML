@@ -31,7 +31,7 @@ with h5py.File(<path-to-sim>) as f:
     print(temp.dim())
 ```
 
-All simulations fields are laid out in memory identically: `T x X x Y`. The first dimension is time, the second is the rows of
+All simulations fields are laid out in memory identically: `T x Y x X`. The first dimension is time, the second is the rows of
 the domain, and the third is the columns of the domain. This layout makes indexing hdf5 files by time faster
 since each domain will be laid out contiguously in memory. In our experiments, we always index by time. Every tensor field will have
 an identical shape:
