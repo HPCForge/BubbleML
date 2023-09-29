@@ -83,7 +83,7 @@ def build_datasets(cfg):
 
     assert val_dataset.absmax_temp() <= 1.5
     assert val_dataset.absmax_vel() <= 1.5
-    return train_dataset, val_dataset
+    return train_dataset, val_dataset, train_max_temp, train_max_vel
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
     if cfg.experiment.distributed:
@@ -136,7 +136,7 @@ def train_app(cfg):
     
     writer = SummaryWriter(log_dir=log_dir)
 
-    train_dataset, val_dataset = build_datasets(cfg)
+    train_dataset, val_dataset, train_max_temp, train_max_val = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
     #tail = cfg.dataset.val_paths[0].split('-')[-1]
@@ -153,7 +153,7 @@ def train_app(cfg):
     model = get_model(model_name, in_channels, out_channels, exp)
 
     if cfg.model_checkpoint:
-        model.load_state_dict(torch.load(cfg.model_checkpoint))
+        model.load_state_dict(torch.load(cfg.model_checkpoint)['model_state_dict'])
     print(model)
     np = nparams(model)
     print(f'Model has {np} parameters')
@@ -204,9 +204,9 @@ def train_app(cfg):
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
         if cfg.experiment.distributed:
-            torch.save(model.module.state_dict(), f'{ckpt_path}')
+            torch.save({'model_state_dict': model.module.state_dict(), 'max_temp': train_max_temp, 'max_val': train_max_val}, f'{ckpt_path}')
         else:
-            torch.save(model.state_dict(), f'{ckpt_path}')
+            torch.save({'model_state_dict':model.state_dict(), 'max_temp': train_max_temp, 'max_val': train_max_val}, f'{ckpt_path}')
 
     if cfg.test and dist_utils.is_leader_process():
         trainer.test(val_dataset.datasets[0])
