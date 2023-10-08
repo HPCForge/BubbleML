@@ -61,7 +61,6 @@ class TempTrainer:
         input = torch.cat((temp, vel), dim=1)
         if self.cfg.train.use_coords:
             input = torch.cat((coords, input), dim=1)
-        #print(input.size())
         pred = self.model(input)
         return pred
         # TODO: account for different timesteps of training data
@@ -82,8 +81,9 @@ class TempTrainer:
 
     def downsample_domain(self, *args):
         downsample_factor = self.cfg.train.downsample_factor
-        assert downsample_factor > 0 and downsample_factor <= 1.0
-        return tuple([F.interpolate(im, scale_factor=(downsample_factor, downsample_factor)) for im in args])
+        assert isinstance(downsample_factor, int)
+        assert downsample_factor >= 1
+        return tuple([im[..., ::downsample_factor, ::downsample_factor] for im in args])
 
     def train_step(self, epoch):
         self.model.train()
