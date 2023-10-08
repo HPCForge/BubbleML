@@ -136,7 +136,7 @@ def train_app(cfg):
     
     writer = SummaryWriter(log_dir=log_dir)
 
-    train_dataset, val_dataset, train_max_temp, train_max_val = build_datasets(cfg)
+    train_dataset, val_dataset, train_max_temp, train_max_vel = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
     #tail = cfg.dataset.val_paths[0].split('-')[-1]
@@ -194,19 +194,26 @@ def train_app(cfg):
     if cfg.train and not cfg.model_checkpoint:
         trainer.train(exp.train.max_epochs, log_dir, dataset_name=cfg.dataset.name)
         timestamp = int(time.time())
+
         if cfg.experiment.distributed:
-            model_name = model.module.__class__.__name__
+            module = model.module
         else:
-            model_name = model.__class__.__name__
+            module = model
+
+        model_name = module.__class__.__name__
         ckpt_file = f'{model_name}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
         ckpt_root = Path.home() / f'{log_dir}/{cfg.dataset.name}'
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
-        if cfg.experiment.distributed:
-            torch.save({'model_state_dict': model.module.state_dict(), 'max_temp': train_max_temp, 'max_val': train_max_val}, f'{ckpt_path}')
-        else:
-            torch.save({'model_state_dict':model.state_dict(), 'max_temp': train_max_temp, 'max_val': train_max_val}, f'{ckpt_path}')
+        
+        save_dict = {
+            'model_state_dict': module.state_dict(),
+            'train_data_max_temp': train_max_temp,
+            'train_data_max_vel': train_max_vel
+        }
+
+        torch.save(save_dict, f'{ckpt_path}')
 
     if cfg.test and dist_utils.is_leader_process():
         trainer.test(val_dataset.datasets[0])
