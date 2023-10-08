@@ -17,13 +17,15 @@ dependencies:
   - pip
   - pip:
     - hydra-core
-    - neuraloperator
+    - git+https://github.com/neuraloperator/neuraloperator
     - opencv-python
     - matplotlib
     - tensorboard
     - tensorly
     - tensorly-torch
+    - torch-harmonics
     - zarr
     - opt_einsum
+    - einops
     - wandb
     - jupyterlab

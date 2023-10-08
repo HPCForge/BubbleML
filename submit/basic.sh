@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH -A amowli_lab_gpu
-#SBATCH -p gpu
+#SBATCH -p free-gpu
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:A100:1
 #SBATCH --ntasks-per-node=1
@@ -13,10 +12,10 @@ conda activate bubble-sciml
 module load gcc/11.2.0
 
 python src/train.py \
-	data_base_dir=/share/crsp/lab/ai4ts/share/simul_ts_0.1/ \
+	data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
 	log_dir=/share/crsp/lab/ai4ts/afeeney/log_dir \
-	dataset=PB_SubCooled_0.1 \
-	experiment=temp_unet2d \
+	dataset=PB_WallSuperHeat \
+	experiment=temp_fno \
 	experiment.train.max_epochs=2 \
 	#experiment.lr_scheduler.patience=50
 	#model_checkpoint=/share/crsp/lab/ai4ts/afeeney/log_dir/23089030/subcooled/UNet2d_vel_dataset_100_1691046606.pt \

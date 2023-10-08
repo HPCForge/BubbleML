@@ -3,7 +3,7 @@ torch_dataset_name: temp_input_dataset
 distributed: False
 
 train:
-  max_epochs: 250
+  max_epochs: 1
   batch_size: 4
   shuffle_data: True
   time_window: 5
@@ -11,23 +11,23 @@ train:
   push_forward_steps: 1
   use_coords: True
   noise: True
-  downsample_factor: 0.5
+  downsample_factor: 2
 
 model:
   model_name: fno
   n_modes: [64, 64]
-  hidden_channels: 256
-  domain_padding: #0.1
-  n_layers: 6
-  norm: 'instance_norm'
-  rank: 0.1
+  hidden_channels: 128
+  domain_padding: [0.1, 0.1]
+  n_layers: 4
+  norm: 'group_norm'
+  rank: 0.4
 
 optimizer:
   initial_lr: 1e-3
-  weight_decay: 0.01
+  weight_decay: 1e-5
 
 lr_scheduler:
   name: 'step'
   factor: 0.5
-  patience: 75
+  patience: 65
   min_lr: 1e-8

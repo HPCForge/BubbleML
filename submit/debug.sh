@@ -35,6 +35,6 @@ python src/train.py \
 	dataset=PB_SubCooled \
 	log_dir=/pub/afeeney/train_log_dir/ \
 	experiment.distributed=False \
-	experiment=temp_gfno \
+	experiment=temp_fno \
 	experiment.train.max_epochs=3 \
 	#model_checkpoint=/pub/afeeney/train_log_dir/23370470/pb_gravity/FNO_temp_input_dataset_250_1692173966.pt
