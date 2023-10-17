@@ -1,28 +1,25 @@
 torch_dataset_name: temp_input_dataset 
 
-distributed: False
+distributed: True
 
 train:
   max_epochs: 250 
-  batch_size: 4
+  batch_size: 8
   shuffle_data: True
   time_window: 5
   future_window: 5
   push_forward_steps: 1
   use_coords: False
   noise: True
-  downsample_factor: 1.0
+  downsample_factor: 1
 
 model:
-  model_name: unet_mod_attn
-  hidden_channels: 32
+  model_name: unet_bench
+  init_features: 64
   
 optimizer:
-  initial_lr: 5e-4
-  weight_decay: 0.01
+  initial_lr: 1e-3
+  weight_decay: 1e-6
 
 lr_scheduler:
-  name: 'step'
-  factor: 0.5
-  patience: 75
-  min_lr: 1e-8
+  name: cosine

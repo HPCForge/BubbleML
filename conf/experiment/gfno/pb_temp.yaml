@@ -4,7 +4,7 @@ torch_dataset_name: temp_input_dataset
 distributed: False
 
 train:
-  max_epochs: 250 
+  max_epochs: 350 
   batch_size: 4
   shuffle_data: True
   time_window: 5
@@ -12,20 +12,17 @@ train:
   push_forward_steps: 1
   use_coords: True
   noise: True
-  downsample_factor: 0.25
+  downsample_factor: 4 
 
 model:
   model_name: gfno
-  modes: 32
+  fmode_frac: [0.25, 0.25]
   width: 64
   reflection: False
 
 optimizer:
   initial_lr: 1e-3
-  weight_decay: 0.01
+  weight_decay: 1e-6
 
 lr_scheduler:
-  name: 'step'
-  factor: 0.5
-  patience: 75
-  min_lr: 1e-8
+  name: cosine

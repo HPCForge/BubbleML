@@ -21,24 +21,19 @@ conda activate bubble-sciml
 #DATASET=PB_SubCooled_0.1
 #DATASET=FB_Gravity_0.1
 
-DATASET=PB_SubCooled
+#DATASET=PB_SubCooled
 #DATASET=PB_WallSuperHeat
-#DATASET=PB_Gravity
+DATASET=PB_Gravity
 #DATASET=FB_Gravity
 #DATASET=FB_InletVel
 
-#EXPERIMENT=temp_unet2d
-#EXPERIMENT=temp_unet_mod_attn
-#EXPERIMENT=temp_ufnet
-#EXPERIMENT=temp_fno
-#EXPERIMENT=temp_uno
-#EXPERIMENT=temp_ffno
-
-# GFNO requires multi-gpu...
-# Do this last
-#EXPERIMENT=temp_gfno
-
-#data_base_dir=/share/crsp/lab/amowli/share/simul_ts_0.1/ \
+#MODEL=fno
+MODEL=uno
+#MODEL=ffno
+#MODEL=gfno
+#MODEL=unet_bench
+#MODEL=unet_arena
+#MODEL=ufnet
 
 srun torchrun \
     --nnodes $NNODES \
@@ -53,5 +48,4 @@ srun torchrun \
 		data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \
-		experiment=$EXPERIMENT \
-		experiment.train.max_epochs=150 \
+		experiment=$MODEL/pb_temp \

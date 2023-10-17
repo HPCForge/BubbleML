@@ -152,3 +152,5 @@ class VelTrainer:
         plt_temp(temp_preds, temp_labels, model_name)
         max_mag = mag_labels.max()
         plt_vel(mag_preds, mag_labels, max_mag, model_name)
+
+        return metrics

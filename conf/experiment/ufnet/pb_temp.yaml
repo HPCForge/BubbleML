@@ -1,9 +1,9 @@
 torch_dataset_name: temp_input_dataset 
 
-distributed: True
+distributed: False
 
 train:
-  max_epochs: 250 
+  max_epochs: 350 
   batch_size: 4
   shuffle_data: True
   time_window: 5
@@ -11,7 +11,7 @@ train:
   push_forward_steps: 1
   use_coords: False
   noise: True
-  downsample_factor: 1.0
+  downsample_factor: 1
 
 model:
   model_name: ufnet
@@ -21,10 +21,8 @@ model:
   n_fourier_layers: 2
 
 optimizer:
-  initial_lr: 5e-4
-  weight_decay: 0.01
+  initial_lr: 1e-3 
+  weight_decay: 1e-6
 
 lr_scheduler:
-  factor: 0.5
-  patience: 75
-  min_lr: 1e-8
+  name: cosine

@@ -15,15 +15,15 @@ train:
 
 model:
   model_name: factorized_fno
-  modes: 64
-  width: 256
+  fmode_frac: [0.66, 0.66]
+  width: 64
   dropout: 0.0
-  n_layers: 7
+  n_layers: 4
   layer_norm: True
   
 optimizer:
   initial_lr: 1e-4
-  weight_decay: 0.01
+  weight_decay: 1e-6
 
 lr_scheduler:
   name: cosine
