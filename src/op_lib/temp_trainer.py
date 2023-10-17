@@ -16,6 +16,7 @@ from .losses import LpLoss
 from .plt_util import plt_temp, plt_iter_mae
 from .heatflux import heatflux
 from .dist_utils import local_rank, is_leader_process
+from .downsample import downsample_domain
 
 from torch.cuda import nvtx 
 import time
@@ -63,14 +64,6 @@ class TempTrainer:
             input = torch.cat((coords, input), dim=1)
         pred = self.model(input)
         return pred
-        # TODO: account for different timesteps of training data
-        #  - u_k+l = u_k + (t_k+l - t_k)d_l
-        # at the moment, time discretization is 1, so t_k+l - t_k is just l + 1
-        #timesteps = (torch.arange(self.future_window) + 1).to(pred.device).unsqueeze(-1).unsqueeze(-1)
-        #timesteps = timesteps.float()
-        #last_temp_input = temp[:, -1].unsqueeze(1).to(pred.device)
-        #sol = last_temp_input + timesteps * pred
-        #return sol
 
     def push_forward_trick(self, coords, temp, vel):
         if self.cfg.train.noise:
@@ -78,12 +71,6 @@ class TempTrainer:
             vel += torch.empty_like(vel).normal_(0, 0.01)
         pred = self._forward_int(coords, temp, vel)
         return pred
-
-    def downsample_domain(self, *args):
-        downsample_factor = self.cfg.train.downsample_factor
-        assert isinstance(downsample_factor, int)
-        assert downsample_factor >= 1
-        return tuple([im[..., ::downsample_factor, ::downsample_factor] for im in args])
 
     def train_step(self, epoch):
         self.model.train()
@@ -93,7 +80,7 @@ class TempTrainer:
             temp = temp.to(self.local_rank).float()
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
-            coords, temp, vel, label = self.downsample_domain(coords, temp, vel, label)
+            coords, temp, vel, label = downsample_domain(self.cfg.train.downsample_factor, coords, temp, vel, label)
 
             pred = self.push_forward_trick(coords, temp, vel)
 
@@ -103,8 +90,9 @@ class TempTrainer:
             nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
             self.lr_scheduler.step()
-            
-            print(f'train loss: {loss}')
+
+            mse_loss = F.mse_loss(pred, label).detach()
+            print(f'train loss: {loss}, mse: {mse_loss}')
             global_iter = epoch * len(self.train_dataloader) + iter
             write_metrics(pred, label, global_iter, 'Train', self.writer)
             del temp, vel, label
@@ -165,3 +153,5 @@ class TempTrainer:
             
             plt_temp(temps, labels, self.model.__class__.__name__)
             plt_iter_mae(temps, labels)
+
+            return metrics

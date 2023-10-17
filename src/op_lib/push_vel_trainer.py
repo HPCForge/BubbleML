@@ -17,6 +17,7 @@ from .losses import LpLoss
 from .plt_util import plt_temp, plt_iter_mae, plt_vel
 from .heatflux import heatflux
 from .dist_utils import local_rank, is_leader_process
+from .downsample import downsample_domain
 
 from torch.cuda import nvtx 
 
@@ -130,28 +131,22 @@ class PushVelTrainer:
         coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
         assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
         coords_input, temp_input, vel_input, dfun_input = \
-                self.downsample_domain(coords_input, temp_input, vel_input, dfun_input)
+                downsample_domain(self.cfg.train.downsample_factor, coords_input, temp_input, vel_input, dfun_input)
         with torch.no_grad():
             for idx in range(push_forward_steps - 1):
                 temp_input, vel_input = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
                 dfun_input = self._index_dfun(idx + 1, dfun)
-                dfun_input = self.downsample_domain(dfun_input)[0]
+                dfun_input = downsample_domain(self.cfg.train.downsample_factor, dfun_input)[0]
         if self.cfg.train.noise and push_forward_steps == 1:
             temp_input += torch.empty_like(temp_input).normal_(0, 0.01)
             vel_input += torch.empty_like(vel_input).normal_(0, 0.01)
         temp_pred, vel_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
         return temp_pred, vel_pred
 
-    def downsample_domain(self, *args):
-        downsample_factor = self.cfg.train.downsample_factor
-        assert downsample_factor > 0 and downsample_factor <= 1.0
-        return tuple([F.interpolate(im, scale_factor=downsample_factor) for im in args])
-
     def train_step(self, epoch, max_epochs):
         self.model.train()
 
         # warmup before doing push forward trick
-
         for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.train_dataloader):
             coords = coords.to(local_rank()).float()
             temp = temp.to(local_rank()).float()
@@ -167,7 +162,7 @@ class PushVelTrainer:
             idx = (push_forward_steps - 1)
             vel_label = vel_label[:, idx].to(local_rank()).float()
 
-            temp_label, vel_label = self.downsample_domain(temp_label, vel_label)
+            temp_label, vel_label = downsample_domain(self.cfg.train.downsample_factor, temp_label, vel_label)
 
             temp_loss = F.mse_loss(temp_pred, temp_label)
             vel_loss = F.mse_loss(vel_pred, vel_label)

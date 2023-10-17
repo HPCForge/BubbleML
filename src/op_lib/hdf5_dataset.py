@@ -37,6 +37,9 @@ class HDF5ConcatDataset(ConcatDataset):
             d.normalize_vel_(absmax_vel)
         return absmax_vel
 
+    def datum_dim(self):
+        return self.datasets[0].datum_dim()
+
 class HDF5Dataset(Dataset):
     def __init__(self,
                  filename,
@@ -57,7 +60,6 @@ class HDF5Dataset(Dataset):
         self.vel_scale = None
         self.reset()
 
-
     def reset(self):
         self._data = {}
         with h5py.File(self.filename, 'r') as f:
@@ -72,6 +74,9 @@ class HDF5Dataset(Dataset):
         if self.temp_scale and self.vel_scale:
             self.normalize_temp_(self.temp_scale)
             self.normalize_vel_(self.vel_scale)
+
+    def datum_dim(self):
+        return self._data['temp'].size()
 
     def _redim_temp(self, filename):
         r"""

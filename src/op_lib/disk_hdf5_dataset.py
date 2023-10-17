@@ -31,6 +31,9 @@ class DiskHDF5Dataset(Dataset):
         self.temp_scale = None
         self.vel_scale = None
 
+    def datum_dim(self):
+        return self._data['temperature'][:].shape
+
     def __len__(self):
         # len is the number of timesteps. Each prediction
         # requires time_window frames, so we can't predict for

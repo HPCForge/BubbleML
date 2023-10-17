@@ -30,6 +30,7 @@ from op_lib.hdf5_dataset import (
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib.schedule_utils import LinearWarmupLR
 from op_lib import dist_utils
 
 from models.get_model import get_model
@@ -44,12 +45,6 @@ trainer_map = {
     'temp_input_dataset': TempTrainer,
     'vel_dataset': PushVelTrainer
 }
-
-class LinearWarmupLR(torch.optim.lr_scheduler.LambdaLR):
-    def __init__(self, optimizer, warmup_iters):
-        self.warmup_iters = warmup_iters
-        warmup_func = lambda current_step: min(1, current_step / self.warmup_iters)
-        super().__init__(optimizer, lr_lambda=warmup_func)
 
 def build_datasets(cfg):
     DatasetClass = torch_dataset_map[cfg.experiment.torch_dataset_name]
@@ -99,16 +94,16 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                   sampler=train_sampler,
                                   shuffle=train_shuffle,
                                   batch_size=cfg.experiment.train.batch_size,
-                                  num_workers=2,
+                                  num_workers=4,
                                   pin_memory=True,
-                                  prefetch_factor=4)
+                                  prefetch_factor=2)
     val_dataloader = DataLoader(val_dataset, 
                                 sampler=val_sampler,
                                 batch_size=cfg.experiment.train.batch_size,
                                 shuffle=False,
                                 num_workers=2,
                                 pin_memory=True,
-                                prefetch_factor=4)
+                                prefetch_factor=2)
     return train_dataloader, val_dataloader
 
 def nparams(model):
@@ -124,6 +119,11 @@ def train_app(cfg):
     assert cfg.experiment.train.time_window > 0
     assert cfg.experiment.train.future_window > 0
     assert cfg.experiment.train.push_forward_steps > 0
+    downsample_factor = cfg.experiment.train.downsample_factor
+    if isinstance(downsample_factor, int):
+        downsample_factor = [downsample_factor, downsample_factor]
+    assert all([df >= 1 and isinstance(df, int) for df in downsample_factor])
+    cfg.experiment.train.downsample_factor = downsample_factor
 
     if cfg.experiment.distributed:
         dist_utils.initialize('nccl')
@@ -150,7 +150,18 @@ def train_app(cfg):
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
 
-    model = get_model(model_name, in_channels, out_channels, exp)
+    # domain_rows and domain_cols are used to determine the number of modes
+    # used in fourier models.
+    _, domain_rows, domain_cols = train_dataset.datum_dim()
+    downsampled_rows = domain_rows / downsample_factor[0]
+    downsampled_cols = domain_cols / downsample_factor[1]
+
+    model = get_model(model_name,
+                      in_channels,
+                      out_channels,
+                      downsampled_rows,
+                      downsampled_cols,
+                      exp)
 
     if cfg.model_checkpoint:
         model.load_state_dict(torch.load(cfg.model_checkpoint)['model_state_dict'])
@@ -173,7 +184,7 @@ def train_app(cfg):
     elif exp.lr_scheduler.name == 'cosine':
         warm_schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,
                                                                    T_max=exp.train.max_epochs * len(train_dataloader),
-                                                                   eta_min=1e-6)
+                                                                   eta_min=1e-7)
     # SequentialLR produces a deprecation warning when calling sub-schedulers.
     # https://github.com/pytorch/pytorch/issues/76113
     lr_scheduler = torch.optim.lr_scheduler.SequentialLR(optimizer, [warmup_lr, warm_schedule], [warmup_iters])
@@ -201,22 +212,36 @@ def train_app(cfg):
             module = model
 
         model_name = module.__class__.__name__
-        ckpt_file = f'{model_name}_{exp.torch_dataset_name}_{exp.train.max_epochs}_{timestamp}.pt'
+        ckpt_file = f'{model_name}_{cfg.dataset.name}_{exp.torch_dataset_name}_{timestamp}.pt'
         ckpt_root = Path.home() / f'{log_dir}/{cfg.dataset.name}'
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
+
+        if cfg.test and dist_utils.is_leader_process():
+            metrics = trainer.test(val_dataset.datasets[0])
         
         save_dict = {
-            'model_state_dict': module.state_dict(),
+            'id': f'{cfg.dataset.name}_{model_name}_{exp.torch_dataset_name}',
+            'metrics': metrics,
+            # used for normalization
             'train_data_max_temp': train_max_temp,
-            'train_data_max_vel': train_max_vel
+            'train_data_max_vel': train_max_vel,
+            # can be used to restart the learning rate
+            'epochs': exp.train.max_epochs,
+            # info needed to reconstruct the model
+            'model_state_dict': module.state_dict(),
+            'in_channels': in_channels,
+            'out_channels': out_channels,
+            'downsampled_rows': downsampled_rows,
+            'downsampled_cols': downsampled_cols,
+            'exp': exp,
         }
 
         torch.save(save_dict, f'{ckpt_path}')
 
-    if cfg.test and dist_utils.is_leader_process():
-        trainer.test(val_dataset.datasets[0])
+    if not cfg.train and cfg.test and dist_utils.is_leader_process():
+        metrics = trainer.test(val_dataset.datasets[0])
 
 if __name__ == '__main__':
     train_app()
