@@ -1,6 +1,6 @@
 # Optical Flow Models
 ## Model Checkpoints
-The pretrained models can be downloaded by following the instructions in the official repositories [RAFT](https//github.com/princeton-vl/RAFT) and [GMFlow](https//github.com/haofeixu/gmflow)
+The pretrained models can be downloaded by following the instructions in the official repositories [RAFT](https://github.com/princeton-vl/RAFT) and [GMFlow](https://github.com/haofeixu/gmflow)
 The links for the finetuned models are given below. Each link contains the C+B, C+T+B and C+T+S+B model checkpoints respectively.
 
 | Models | Size |
