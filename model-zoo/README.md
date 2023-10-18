@@ -5,17 +5,17 @@ The links for the finetuned models are given below. Each link contains the C+B, 
 
 | Models | Size |
 |----|----|
-| [RAFT Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-gravity.tar.gz) | 56.0 MB |
-| [RAFT Flow Boiling InletVelocity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-velscale.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-subcooled.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
-| [RAFT Pool Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-gravity.tar.gz) | 56.0 MB |
-| [GMFlow Flow Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-gravity.tar.gz) | 147.3 MB |
-| [GMFlow Flow Boiling InletVelocity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-velscale.tar.gz) | 146.7 MB |
-| [GMFlow Pool Boiling SubCooled Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-subcooled.tar.gz) | 148.0 MB |
-| [GMFlow Pool Boiling Saturated Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-saturated.tar.gz) | 148.9 MB |
-| [GMFlow Pool Boiling Gravity Models](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-gravity.tar.gz) | 147.9 MB |
+| [RAFT Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-gravity.tar.gz) | 56.0 MB |
+| [RAFT Flow Boiling InletVelocity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-flow-boiling-velscale.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-subcooled.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-saturated.tar.gz) | 56.0 MB |
+| [RAFT Pool Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/raft-pool-boiling-gravity.tar.gz) | 56.0 MB |
+| [GMFlow Flow Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-gravity.tar.gz) | 147.3 MB |
+| [GMFlow Flow Boiling InletVelocity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-flow-boiling-velscale.tar.gz) | 146.7 MB |
+| [GMFlow Pool Boiling SubCooled Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-subcooled.tar.gz) | 148.0 MB |
+| [GMFlow Pool Boiling Saturated Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-saturated.tar.gz) | 148.9 MB |
+| [GMFlow Pool Boiling Gravity Models](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/gmflow-pool-boiling-gravity.tar.gz) | 147.9 MB |
 
 ## Model Benchmarks
 
@@ -113,12 +113,12 @@ the `.tar.gz`.
 
 | Models | Size |
 |----|----|
-| [Pool Boiling SubCooled](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 4.5 GB |
-| [Pool Boiling Saturated](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
-| [Pool Boiling Gravity](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
-| [Flow Boiling Gravity](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 4.5 GB |
-| [Flow Boiling InletVel](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_inletvel.tar.gz) | 4.5 GB |
-| [Pool Boiling SubCooled 0.1](https//bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled_0.1.tar.gz) | 5.7 GB |
+| [Pool Boiling SubCooled](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled.tar.gz) | 4.5 GB |
+| [Pool Boiling Saturated](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
+| [Pool Boiling Gravity](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_saturated.tar.gz) | 4.5 GB |
+| [Flow Boiling Gravity](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_gravity.tar.gz) | 4.5 GB |
+| [Flow Boiling InletVel](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/fb_inletvel.tar.gz) | 4.5 GB |
+| [Pool Boiling SubCooled 0.1](https://bubbleml-model-checkpoints.s3.us-east-2.amazonaws.com/pb_subcooled_0.1.tar.gz) | 5.7 GB |
 
 ## Model Benchmarks
 
