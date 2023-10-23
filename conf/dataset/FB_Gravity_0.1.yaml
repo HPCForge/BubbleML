@@ -1,4 +1,4 @@
-name: subcooled
+name: gravity
 transform: True
 steady_time: 300
 train_paths:
