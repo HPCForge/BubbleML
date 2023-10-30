@@ -29,7 +29,7 @@ To support such efforts, we provide a [reproducibility capsule](https://github.c
 
 ## Models
 
-Checkpoints for the models mentioned in the paper, along with ther respective results are listed in the [model zoo](model-zoo/README.md). (Note: metrics will not necissarily match the paper. We hope that this page serves as a "live" listing that shows the best results thus far.)
+Checkpoints for the models mentioned in the paper, along with ther respective results are listed in the [model zoo](model-zoo/README.md). (Note: metrics will not necessarily match the paper. We hope that this page serves as a "live" listing that shows the best results thus far.)
 
 ## Running SciML Code
 
