@@ -49,13 +49,13 @@ Similarly, each model is treated as a separate experiment: `conf/experiment/*.ya
 For example, training a temperature prediction UNet model on the subcooled boiling dataset is simple:
 
 ```console
-python src/train.py dataset=PB_SubCooled experiment=temp_unet2d
+python sciml/train.py dataset=PB_SubCooled experiment=temp_unet2d
 ```
 
 If you want to run a pretrained model, you can specify the `model_checkpoint` path
 
 ```console
-python src/train.py dataset=PB_SubCooled experiment=temp_unet2d model_checkpoint=<path>
+python sciml/train.py dataset=PB_SubCooled experiment=temp_unet2d model_checkpoint=<path>
 ```
 
 The config file `conf/default.yaml` assumes that the datasets are extracted to the same location.
@@ -73,7 +73,7 @@ For example, if you downloaded two datasets to
 then, to train a UNet model on the subcooled boiling dataset, just run
 
 ```console
-python src/train.py \
+python sciml/train.py \
 	data_base_dir=/your/path/to/BubbleML \
 	dataset=PB_SubCooled experiment=temp_unet
 ```
