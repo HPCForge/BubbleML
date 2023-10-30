@@ -12,7 +12,7 @@ module load anaconda/2022.05
 conda activate mf-pytorch2
 module load gcc/11.2.0
 
-python src/train.py \
+python sciml/train.py \
 	dataset=PB_WallSuperHeat_CrossVal150 \
 	experiment=temp_unet2d \
 	experiment.torch_dataset_name=temp_input_dataset \

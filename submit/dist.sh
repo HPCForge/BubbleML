@@ -49,7 +49,7 @@ srun torchrun \
     --rdzv_endpoint $HOST_NODE_ADDR \
     --redirects 3 \
     --tee 3 \
-    src/train.py \
+    sciml/train.py \
 		data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \

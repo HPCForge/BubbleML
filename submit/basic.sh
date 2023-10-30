@@ -11,7 +11,7 @@ module load anaconda/2022.05
 conda activate bubble-sciml
 module load gcc/11.2.0
 
-python src/train.py \
+python sciml/train.py \
 	data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
 	log_dir=/share/crsp/lab/ai4ts/afeeney/log_dir \
 	dataset=PB_WallSuperHeat \

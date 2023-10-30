@@ -5,7 +5,6 @@
 #SBATCH --gres=gpu:A30:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=20
-#SBATCH --mem-per-cpu=5G
 #SBATCH --time=48:00:00
 
 # One node needs to be used as the "host" for the rendezvuoz
@@ -20,8 +19,9 @@ conda activate bubble-sciml
 
 #DATASET=PB_SubCooled_0.1
 #DATASET=FB_Gravity_0.1
+DATASET=FB_InletVel_0.1
 
-DATASET=PB_SubCooled
+#DATASET=PB_SubCooled
 #DATASET=PB_WallSuperHeat
 #DATASET=PB_Gravity
 #DATASET=FB_Gravity
@@ -44,8 +44,9 @@ srun torchrun \
     --rdzv_endpoint $HOST_NODE_ADDR \
     --redirects 3 \
     --tee 3 \
-    src/train.py \
-		data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
+    sciml/train.py \
+		data_base_dir=/share/crsp/lab/ai4ts/share/simul_ts_0.1/ \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \
 		experiment=$MODEL/pb_vel \
+		experiment.train.max_epochs=25
