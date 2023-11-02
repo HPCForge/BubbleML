@@ -262,6 +262,11 @@ class GFNO2d(nn.Module):
         """
         x = self.p(x)
 
+        padding = 30
+
+        # pad the bottom and right.
+        x = nn.functional.pad(x, (0, padding, 0, padding))
+
         x1 = self.norm(self.conv0(self.norm(x)))
         x1 = self.mlp0(x1)
         x2 = self.w0(x)
@@ -285,7 +290,8 @@ class GFNO2d(nn.Module):
         x2 = self.w3(x)
         x = x1 + x2
 
-        # x = x[..., :-self.padding, :-self.padding] # pad the domain if input is non-periodic
+        # chop off the padded bottom and right.
+        x = x[..., :-padding, :-padding]
         x = self.q(x)
         return x
 

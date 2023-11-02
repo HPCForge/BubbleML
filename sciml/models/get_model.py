@@ -108,8 +108,7 @@ def get_model(model_name,
     elif model_name == _GFNO:
         model = GFNO2d(in_channels=in_channels,
                        out_channels=out_channels,
-                       # GFNO only works for square modes.
-                       modes=fmode_row,
+                       modes=exp.model.modes, #fmode_row,
                        width=exp.model.width,
                        reflection=exp.model.reflection) 
     if exp.distributed:

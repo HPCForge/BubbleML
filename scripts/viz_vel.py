@@ -2,6 +2,7 @@
 import torch
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, BoundaryNorm
+from matplotlib.gridspec import GridSpec
 import numpy as np
 
 velx_pred = torch.load('scripts/data/vel_unet_mod_push/velx_output.pt').numpy()
@@ -24,6 +25,7 @@ steps = list(range(1, velx_label.shape[0] // 2 + 1, 20))
 
 plt.rc("font", family="serif", size=18, weight="bold")
 plt.rc("axes", labelweight="bold")
+
 fig, ax = plt.subplots(3, len(steps), figsize=(14.5, 7))
 
 mag_label = np.sqrt(velx_label**2 + vely_label**2)
@@ -34,9 +36,21 @@ vmin, vmax = 0, max(mag_label[steps].max(), mag_pred[steps].max())
 
 for idx, t in enumerate(steps):
     label_im = ax[0][idx].imshow(np.flipud(mag_label[t]), cmap=cmap, vmin=vmin, vmax=vmax)
-    ax[0][idx].streamplot(x, y, velx_label[t,d:-d,d:-d], vely_label[t,d:-d,d:-d], linewidth=0.5, density=0.75, color='w', arrowstyle='fancy')
+    ax[0][idx].streamplot(x, y,
+                          velx_label[t,d:-d,d:-d],
+                          vely_label[t,d:-d,d:-d],
+                          linewidth=0.5,
+                          density=0.75,
+                          color='w',
+                          arrowstyle='fancy')
     ax[1][idx].imshow(np.flipud(mag_pred[t]), cmap=cmap, vmin=vmin, vmax=vmax)
-    ax[1][idx].streamplot(x, y, velx_pred[t,d:-d,d:-d], vely_pred[t,d:-d,d:-d], linewidth=0.5, density=0.75, color='w', arrowstyle='fancy')
+    ax[1][idx].streamplot(x, y,
+                          velx_pred[t,d:-d,d:-d],
+                          vely_pred[t,d:-d,d:-d],
+                          linewidth=0.5,
+                          density=0.75,
+                          color='w',
+                          arrowstyle='fancy')
     error_im = ax[2][idx].imshow(np.flipud(mag_error[t]), cmap=cmap, vmin=vmin, vmax=mag_error[steps].max())
     for i in range(3):
         ax[i][idx].set_xticks([])
@@ -52,5 +66,5 @@ plt.tight_layout()
 fig.subplots_adjust(wspace=0, hspace=0)
 fig.colorbar(label_im, ax=ax[:2].ravel().tolist(), pad=0.005, shrink=0.5)
 fig.colorbar(error_im, ax=ax[2].ravel().tolist(), pad=0.005)
-plt.savefig(f'vel.png', dpi=500)
+plt.savefig(f'vel.pdf', dpi=500, bbox_inches='tight')
 plt.close()
