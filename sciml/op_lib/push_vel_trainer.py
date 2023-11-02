@@ -203,7 +203,7 @@ class PushVelTrainer:
             write_metrics(vel_pred, vel_label, global_iter, 'ValVel', self.writer)
             del temp, vel, temp_label, vel_label
 
-    def test(self, dataset, max_time_limit=2000):
+    def test(self, dataset, max_time_limit=300):
         self.model.eval()
         temps = []
         temps_labels = []

@@ -57,6 +57,9 @@ class TempTrainer:
             print('epoch ', epoch)
             self.train_step(epoch)
             self.val_step(epoch)
+            # test each epoch
+            val_dataset = self.val_dataloader.dataset.datasets[0]
+            self.test(val_dataset)
 
     def _forward_int(self, coords, temp, vel):
         input = torch.cat((temp, vel), dim=1)
@@ -84,10 +87,12 @@ class TempTrainer:
 
             pred = self.push_forward_trick(coords, temp, vel)
 
+            print(pred.size(), label.size())
+
             loss = self.loss(pred, label)
             self.optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            #nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
             self.lr_scheduler.step()
 
@@ -153,5 +158,7 @@ class TempTrainer:
             
             plt_temp(temps, labels, self.model.__class__.__name__)
             plt_iter_mae(temps, labels)
+
+            dataset.reset()
 
             return metrics
