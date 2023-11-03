@@ -140,7 +140,7 @@ class GSpectralConv2d(nn.Module):
         super(GSpectralConv2d, self).__init__()
 
         """
-        2D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
+        2D Fourier layer. It does FFT, linear transform, and Inverse FFT.
         """
 
         self.in_channels = in_channels
@@ -254,7 +254,7 @@ class GFNO2d(nn.Module):
         r"""
         (Arthur:) The original code expects the channels to be last.
         They also use a grid utility to get xy-coordinates. This
-        has been modified to remove their grid utility (I pass in 
+        has been modified to remove their grid utility (I pass in
         the xy-coordinates with the input). This then removes
         their permutations, since the channels are already passed
         in the correct location. They also add an extra dim to the
@@ -262,8 +262,7 @@ class GFNO2d(nn.Module):
         """
         x = self.p(x)
 
-        padding = 30
-
+        padding = 40
         # pad the bottom and right.
         x = nn.functional.pad(x, (0, padding, 0, padding))
 
@@ -290,8 +289,7 @@ class GFNO2d(nn.Module):
         x2 = self.w3(x)
         x = x1 + x2
 
-        # chop off the padded bottom and right.
+        # chop off the padded bottom/right of domain
         x = x[..., :-padding, :-padding]
         x = self.q(x)
         return x
-

@@ -2,6 +2,7 @@ import os
 from neuralop.models import FNO, UNO
 from .factorized_fno.factorized_fno import FNOFactorized2DBlock 
 from .gefno.gfno import GFNO2d
+from .gefno.gcnn import GCNN2d
 from .pdebench.unet import UNet2d 
 from .pdearena.unet import Unet, FourierUnet
 
@@ -19,6 +20,7 @@ _UNO = 'uno'
 _FFNO = 'factorized_fno'
 
 _GFNO = 'gfno'
+_GCNN = 'gcnn'
 
 _MODEL_LIST = [
     _UNET_BENCH,
@@ -27,13 +29,14 @@ _MODEL_LIST = [
     _FNO,
     _UNO,
     _FFNO,
-    _GFNO
+    _GFNO,
+    _GCNN
 ]
 
 _FOURIER_MODELS = [
     _FNO,
     _FFNO,
-    _GFNO,
+    #_GFNO,
 ]
 
 def get_model(model_name,
@@ -109,6 +112,11 @@ def get_model(model_name,
         model = GFNO2d(in_channels=in_channels,
                        out_channels=out_channels,
                        modes=exp.model.modes, #fmode_row,
+                       width=exp.model.width,
+                       reflection=exp.model.reflection) 
+    elif model_name == _GCNN:
+        model = GCNN2d(in_channels=in_channels,
+                       out_channels=out_channels,
                        width=exp.model.width,
                        reflection=exp.model.reflection) 
     if exp.distributed:

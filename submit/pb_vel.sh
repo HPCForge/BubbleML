@@ -49,4 +49,4 @@ srun torchrun \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \
 		experiment=$MODEL/pb_vel \
-		experiment.train.max_epochs=25
+		experiment.train.max_epochs=2
