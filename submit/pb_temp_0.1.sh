@@ -18,10 +18,10 @@ module load anaconda/2022.05
 . ~/.mycondaconf
 conda activate bubble-sciml
 
-#DATASET=PB_SubCooled_0.1
+DATASET=PB_SubCooled_0.1
 #DATASET=FB_Gravity_0.1
 
-DATASET=PB_SubCooled
+#DATASET=PB_SubCooled
 #DATASET=PB_WallSuperHeat
 #DATASET=PB_Gravity
 #DATASET=FB_Gravity
@@ -45,7 +45,7 @@ srun torchrun \
     --redirects 3 \
     --tee 3 \
     sciml/train.py \
-		data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
+		data_base_dir=/share/crsp/lab/ai4ts/share/simul_ts_0.1/ \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \
 		experiment=gfno_test/cosine \
