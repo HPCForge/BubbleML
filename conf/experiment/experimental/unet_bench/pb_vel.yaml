@@ -1,0 +1,26 @@
+torch_dataset_name: vel_dataset 
+
+distributed: True
+
+train:
+  max_epochs: 25
+  batch_size: 4
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 1
+  use_coords: False
+  noise: True
+  downsample_factor: 1 
+
+model:
+  model_name: unet_bench
+  init_features: 64
+  
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 0.001
+
+lr_scheduler:
+  name: cosine
+  eta_min: 1e-6

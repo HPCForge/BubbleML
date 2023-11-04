@@ -1,0 +1,32 @@
+torch_dataset_name: vel_dataset 
+
+distributed: False
+
+train:
+  max_epochs: 25
+  batch_size: 4
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 1
+  use_coords: True
+  noise: True
+  downsample_factor: [1, 4]
+
+model:
+  model_name: uno
+  hidden_channels: 128
+  projection_channels: 256
+  norm: 'group_norm'
+  n_layers: 5
+  uno_out_channels: [64,64,64,64,64]
+  uno_n_modes: [[128,128],[64, 64],[64,64],[128,128]]
+  uno_scalings: [[1,1],[0.5,0.5],[1,1],[2,2],[1,1]]
+  domain_padding: [0.2, 0.2]
+
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 1e-5
+
+lr_scheduler:
+  name: cosine

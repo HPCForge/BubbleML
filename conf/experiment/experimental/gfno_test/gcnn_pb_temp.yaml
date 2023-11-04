@@ -1,0 +1,29 @@
+torch_dataset_name: temp_input_dataset 
+
+# torch distributed does not support complex parameters
+distributed: False
+
+train:
+  max_epochs: 250 
+  batch_size: 4
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 1
+  use_coords: False
+  noise: True
+  downsample_factor: 1 
+
+model:
+  model_name: gcnn
+  width: 24
+  reflection: False
+
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 1e-5
+
+lr_scheduler:
+  name: step
+  patience: 70
+  factor: 0.5

@@ -1,0 +1,29 @@
+torch_dataset_name: vel_dataset 
+
+# torch distributed does not support complex parameters
+distributed: False
+
+train:
+  max_epochs: 25
+  batch_size: 4
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 1
+  use_coords: True
+  noise: False
+  downsample_factor: 2 
+
+model:
+  model_name: gfno
+  modes: 64
+  width: 28
+  reflection: False
+
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 1e-4
+
+lr_scheduler:
+  name: cosine
+  eta_min: 1e-5
