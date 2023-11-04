@@ -18,27 +18,21 @@ def parse_args():
 @dataclass
 class BoilingData:
     temp: torch.Tensor
-    velx: torch.Tensor
-    vely: torch.Tensor
 
-def load_vel_data(temp_path, vel_path):
+def load_vel_data(temp_path):
     pred = BoilingData(
-            torch.load(f'{temp_path}/model_ouput.pt').numpy(),
-            torch.load(f'{vel_path}/velx_output.pt').numpy(),
-            torch.load(f'{vel_path}/vely_output.pt').numpy())
+            torch.load(f'{temp_path}/model_ouput.pt').numpy())
     label = BoilingData(
-            torch.load(f'{temp_path}/sim_ouput.pt').numpy(),
-            torch.load(f'{vel_path}/velx_label.pt').numpy(),
-            torch.load(f'{vel_path}/vely_label.pt').numpy())
+            torch.load(f'{temp_path}/sim_ouput.pt').numpy())
     return pred, label
 
 def main():
     args = parse_args()
     
-    job_id = '25042240/'
-    pred, label = load_vel_data(f'test_im/temp/{job_id}', f'test_im/vel/{job_id}')
+    job_id = '25057303/'
+    pred, label = load_vel_data(f'test_im/temp/{job_id}')
     
-    plt_vel(pred, label, args.path, 'model')
+    plt_temp(pred.temp, label.temp, args.path, 'model')
 
     subprocess.call(
             f'ffmpeg -y -framerate 25 -pattern_type glob -i "{args.path}/*.png" output.mp4',
@@ -77,18 +71,18 @@ def plt_vel(pred, label, path, model_name):
         i_str = str(i).zfill(3)
         f, ax = plt.subplots(2, 2, layout='constrained')
         
-        x_vmax, x_vmin = label.velx.max(), label.velx.min()
-        y_vmax, y_vmin = label.vely.max(), label.vely.min()
+        #x_vmax, x_vmin = label.velx.max(), label.velx.min()
+        #y_vmax, y_vmin = label.vely.max(), label.vely.min()
 
         cm_object = ax[0, 0].imshow(np.flipud(label.temp[i]), vmin=0, vmax=1, cmap=temp_cmap())
         #ax[1, 0].imshow(np.flipud(label.velx[i]), vmin=x_vmin, vmax=x_vmax, cmap='jet')
         #ax[2, 0].imshow(np.flipud(label.vely[i]), vmin=y_vmin, vmax=y_vmax, cmap='jet')
-        ax[1, 0].imshow(np.flipud(label_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')
+        #ax[1, 0].imshow(np.flipud(label_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')
 
         ax[0, 1].imshow(np.flipud(np.nan_to_num(pred.temp[i])), vmin=0, vmax=1, cmap=temp_cmap())
         #ax[1, 1].imshow(np.flipud(pred.velx[i]), vmin=x_vmin, vmax=x_vmax, cmap='jet')
         #ax[2, 1].imshow(np.flipud(pred.vely[i]), vmin=y_vmin, vmax=x_vmax, cmap='jet')
-        ax[1, 1].imshow(np.flipud(pred_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')
+        #ax[1, 1].imshow(np.flipud(pred_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')
 
         ax[0, 0].axis('off')
         ax[1, 0].axis('off')
@@ -129,8 +123,8 @@ def plt_temp(temps, labels, path, model_name):
             ax.axis('off')
             return cm_object
 
-        temp = temps[i].numpy()
-        label = labels[i].numpy()
+        temp = temps[i]
+        label = labels[i]
         f, axarr = plt.subplots(2, 3, layout="constrained")
         cm_object = plt_temp_arr(f, axarr[0, 0], np.flipud(label), 'Ground Truth')
         cm_object = plt_temp_arr(f, axarr[0, 1], np.flipud(temp), model_name)
