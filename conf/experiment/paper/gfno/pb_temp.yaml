@@ -16,15 +16,16 @@ train:
 
 model:
   model_name: gfno
-  modes: 96
-  width: 20
+  modes: 64
+  width: 128
   reflection: False
+  domain_padding: 0.1
 
 optimizer:
   initial_lr: 1e-3
-  weight_decay: 1e-5
+  weight_decay: 0.01
 
 lr_scheduler:
   name: step
-  patience: 75
   factor: 0.5
+  patience: 75
