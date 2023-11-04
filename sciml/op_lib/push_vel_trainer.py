@@ -169,8 +169,6 @@ class PushVelTrainer:
             loss = (temp_loss + vel_loss) / 2
             self.optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
-            nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
             self.optimizer.step()
             self.lr_scheduler.step()
             
@@ -203,7 +201,7 @@ class PushVelTrainer:
             write_metrics(vel_pred, vel_label, global_iter, 'ValVel', self.writer)
             del temp, vel, temp_label, vel_label
 
-    def test(self, dataset, max_time_limit=300):
+    def test(self, dataset, max_time_limit=200):
         self.model.eval()
         temps = []
         temps_labels = []

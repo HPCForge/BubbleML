@@ -2,7 +2,6 @@ import os
 from neuralop.models import FNO, UNO
 from .factorized_fno.factorized_fno import FNOFactorized2DBlock 
 from .gefno.gfno import GFNO2d
-from .gefno.gcnn import GCNN2d
 from .pdebench.unet import UNet2d 
 from .pdearena.unet import Unet, FourierUnet
 
@@ -20,7 +19,6 @@ _UNO = 'uno'
 _FFNO = 'factorized_fno'
 
 _GFNO = 'gfno'
-_GCNN = 'gcnn'
 
 _MODEL_LIST = [
     _UNET_BENCH,
@@ -29,14 +27,7 @@ _MODEL_LIST = [
     _FNO,
     _UNO,
     _FFNO,
-    _GFNO,
-    _GCNN
-]
-
-_FOURIER_MODELS = [
-    _FNO,
-    _FFNO,
-    #_GFNO,
+    _GFNO
 ]
 
 def get_model(model_name,
@@ -45,14 +36,6 @@ def get_model(model_name,
               domain_rows,
               domain_cols,
               exp):
-    # FNO people recommended using n_modes around 2/3 resolution.
-    # Since the flow boiling datasets are so wide, that may not be
-    # possible along the x-direction.
-    fmode_row, fmode_col = None, None
-    if model_name in _FOURIER_MODELS:
-        fmode_row = int(exp.model.fmode_frac[0] * domain_rows)
-        fmode_col = int(exp.model.fmode_frac[1] * domain_cols)
-
     assert model_name in _MODEL_LIST, f'Model name {model_name} invalid'
     if model_name == _UNET_ARENA:
         model = Unet(in_channels=in_channels,
@@ -80,14 +63,17 @@ def get_model(model_name,
                             norm=True,
                             n_fourier_layers=exp.model.n_fourier_layers)
     elif model_name == _FNO:
-        model = FNO(n_modes=(fmode_row, fmode_col),
+        model = FNO(n_modes=(exp.model.modes, exp.model.modes),
                     hidden_channels=exp.model.hidden_channels,
-                    domain_padding=exp.model.domain_padding,
+                    domain_padding=exp.model.domain_padding[0],
                     in_channels=in_channels,
                     out_channels=out_channels,
                     n_layers=exp.model.n_layers,
                     norm=exp.model.norm,
-                    separable=exp.model.separable)
+                    rank=exp.model.rank,
+                    factorization='tucker',
+                    implementation='factorized',
+                    separable=False)
     elif model_name == _UNO:
         model = UNO(in_channels=in_channels, 
                     out_channels=out_channels,
@@ -101,24 +87,17 @@ def get_model(model_name,
     elif model_name == _FFNO:
         model = FNOFactorized2DBlock(in_channels=in_channels,
                                      out_channels=out_channels,
-                                     # FFNO modes need to be halved. Unlike neuralop,
-                                     # it does not have it for us.
-                                     modes=64,
+                                     modes=exp.model.modes // 2,
                                      width=exp.model.width,
                                      dropout=exp.model.dropout,
-                                     n_layers=exp.model.n_layers,
-                                     )
+                                     n_layers=exp.model.n_layers)
     elif model_name == _GFNO:
         model = GFNO2d(in_channels=in_channels,
                        out_channels=out_channels,
-                       modes=exp.model.modes, #fmode_row,
+                       modes=exp.model.modes // 2,
                        width=exp.model.width,
-                       reflection=exp.model.reflection) 
-    elif model_name == _GCNN:
-        model = GCNN2d(in_channels=in_channels,
-                       out_channels=out_channels,
-                       width=exp.model.width,
-                       reflection=exp.model.reflection) 
+                       reflection=exp.model.reflection,
+                       domain_padding=exp.model.domain_padding) # padding is NEW
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()
