@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import math
 
+from neuralop.models.padding import DomainPadding
+
 # ----------------------------------------------------------------------------------------------------------------------
 # GFNO2d
 # ----------------------------------------------------------------------------------------------------------------------
@@ -213,7 +215,8 @@ class GFNO2d(nn.Module):
                  out_channels,
                  modes,
                  width,
-                 reflection):
+                 reflection,
+                 domain_padding):
         super(GFNO2d, self).__init__()
 
         """
@@ -231,6 +234,9 @@ class GFNO2d(nn.Module):
         self.out_channels = out_channels
         self.modes = modes
         self.width = width
+
+        self.pad = domain_padding > 0
+        self.domain_padding = DomainPadding(domain_padding=domain_padding/2, padding_mode='symmetric')
 
         self.p = GConv2d(in_channels=self.in_channels, out_channels=self.width, kernel_size=1,
                          reflection=reflection, first_layer=True)
@@ -262,9 +268,8 @@ class GFNO2d(nn.Module):
         """
         x = self.p(x)
 
-        padding = 40
-        # pad the bottom and right.
-        x = nn.functional.pad(x, (0, padding, 0, padding))
+        if self.pad:
+            x = self.domain_padding.pad(x)
 
         x1 = self.norm(self.conv0(self.norm(x)))
         x1 = self.mlp0(x1)
@@ -290,6 +295,7 @@ class GFNO2d(nn.Module):
         x = x1 + x2
 
         # chop off the padded bottom/right of domain
-        x = x[..., :-padding, :-padding]
+        if self.pad:
+            x = self.domain_padding.unpad(x)
         x = self.q(x)
         return x
