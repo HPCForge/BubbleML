@@ -174,7 +174,7 @@ def train_app(cfg):
                                   weight_decay=exp.optimizer.weight_decay)
 
     total_iters = exp.train.max_epochs * len(train_dataloader)
-    warmup_iters = max(1, int(math.sqrt(dist_utils.world_size()) * 0.03 * total_iters))
+    warmup_iters = max(1, int(math.sqrt(dist_utils.world_size()) * 0.01 * total_iters))
     warmup_lr = LinearWarmupLR(optimizer, warmup_iters)
     warm_iters = total_iters - warmup_iters
 

@@ -101,6 +101,8 @@ class TempTrainer:
             global_iter = epoch * len(self.train_dataloader) + iter
             write_metrics(pred, label, global_iter, 'Train', self.writer)
             del temp, vel, label
+            torch.cuda.empty_cache()
+
 
     def val_step(self, epoch):
         self.model.eval()

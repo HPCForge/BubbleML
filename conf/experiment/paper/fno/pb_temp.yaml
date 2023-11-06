@@ -4,7 +4,7 @@ distributed: False
 
 train:
   max_epochs: 350
-  batch_size: 20
+  batch_size: 4
   shuffle_data: True
   time_window: 5
   future_window: 5
@@ -16,11 +16,12 @@ train:
 model:
   model_name: fno
   modes: [64, 64]
-  hidden_channels: 256
+  hidden_channels: 128
   domain_padding: [0.1, 0.1]
   n_layers: 6
+  factorization: dense
   norm: 'instance_norm'
-  rank: 0.1
+  rank: 1.0
 
 optimizer:
   initial_lr: 1e-3

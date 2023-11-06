@@ -5,7 +5,7 @@ distributed: False
 
 train:
   max_epochs: 250 
-  batch_size: 4
+  batch_size: 8
   shuffle_data: True
   time_window: 5
   future_window: 5
@@ -17,13 +17,13 @@ train:
 model:
   model_name: gfno
   modes: 64
-  width: 64
+  width: 32
   reflection: False
   domain_padding: 0.1
 
 optimizer:
-  initial_lr: 1e-3
-  weight_decay: 0.01
+  initial_lr: 0.001
+  weight_decay: 1e-6
 
 lr_scheduler:
   name: step

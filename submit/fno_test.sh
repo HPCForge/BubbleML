@@ -2,11 +2,11 @@
 #SBATCH -A amowli_lab_gpu
 #SBATCH -p gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:A100:1
+#SBATCH --gres=gpu:A30:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=10
-#SBATCH --mem-per-cpu=5G
-#SBATCH --time=48:00:00
+#SBATCH --mem-per-cpu=3G
+#SBATCH --time=24:00:00
 
 # One node needs to be used as the "host" for the rendezvuoz
 # system used by torch. This just gets a list of the hostnames
@@ -30,7 +30,7 @@ DATASET=PB_SubCooled
 #MODEL=fno
 #MODEL=uno
 #MODEL=ffno
-MODEL=gfno
+#MODEL=gfno
 #MODEL=unet_bench
 #MODEL=unet_arena
 #MODEL=ufnet
@@ -48,5 +48,11 @@ python sciml/train.py \
 		data_base_dir=/share/crsp/lab/amowli/share/BubbleML2/ \
 		log_dir=/pub/afeeney/train_log_dir \
 		dataset=$DATASET \
-		experiment=paper/gfno/pb_temp \
-		experiment.train.max_epochs=75 \
+		experiment=paper/fno/tune \
+		experiment.optimizer.initial_lr=1e-3 \
+		#experiment.lr_scheduler.name=cosine \
+		#experiment.lr_scheduler.eta_min=1e-5 \
+		#experiment.train.max_epochs=50
+		#model_checkpoint=/pub/afeeney/final_model_checkpoints/PB_Saturated/gfno.pt
+		#experiment=gfno/pb_temp_large \
+		#experiment.optimizer.initial_lr=5e-4

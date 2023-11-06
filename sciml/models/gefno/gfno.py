@@ -244,14 +244,20 @@ class GFNO2d(nn.Module):
         self.conv1 = GSpectralConv2d(in_channels=self.width, out_channels=self.width, modes=self.modes, reflection=reflection)
         self.conv2 = GSpectralConv2d(in_channels=self.width, out_channels=self.width, modes=self.modes, reflection=reflection)
         self.conv3 = GSpectralConv2d(in_channels=self.width, out_channels=self.width, modes=self.modes, reflection=reflection)
+        self.conv4 = GSpectralConv2d(in_channels=self.width, out_channels=self.width, modes=self.modes, reflection=reflection)
+        self.conv5 = GSpectralConv2d(in_channels=self.width, out_channels=self.width, modes=self.modes, reflection=reflection)
         self.mlp0 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
         self.mlp1 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
         self.mlp2 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
         self.mlp3 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
+        self.mlp4 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
+        self.mlp5 = GMLP2d(in_channels=self.width, out_channels=self.width, mid_channels=self.width, reflection=reflection)
         self.w0 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
         self.w1 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
         self.w2 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
         self.w3 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
+        self.w4 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
+        self.w5 = GConv2d(in_channels=self.width, out_channels=self.width, kernel_size=1, reflection=reflection)
         self.norm = GNorm(self.width, group_size=4 * (1 + reflection))
         self.q = GMLP2d(in_channels=self.width, out_channels=self.out_channels, mid_channels=self.width * 4, reflection=reflection,
                         last_layer=True)
@@ -292,6 +298,16 @@ class GFNO2d(nn.Module):
         x1 = self.norm(self.conv3(self.norm(x)))
         x1 = self.mlp3(x1)
         x2 = self.w3(x)
+        x = x1 + x2
+
+        x1 = self.norm(self.conv4(self.norm(x)))
+        x1 = self.mlp4(x1)
+        x2 = self.w4(x)
+        x = x1 + x2
+
+        x1 = self.norm(self.conv5(self.norm(x)))
+        x1 = self.mlp5(x1)
+        x2 = self.w5(x)
         x = x1 + x2
 
         # chop off the padded bottom/right of domain

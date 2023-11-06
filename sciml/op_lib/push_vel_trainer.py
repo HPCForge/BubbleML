@@ -164,8 +164,10 @@ class PushVelTrainer:
 
             temp_label, vel_label = downsample_domain(self.cfg.train.downsample_factor, temp_label, vel_label)
 
-            temp_loss = F.mse_loss(temp_pred, temp_label)
-            vel_loss = F.mse_loss(vel_pred, vel_label)
+            #temp_loss = F.mse_loss(temp_pred, temp_label)
+            #vel_loss = F.mse_loss(vel_pred, vel_label)
+            temp_loss = self.loss(temp_pred, temp_label)
+            vel_loss = self.loss(temp_pred, temp_label)
             loss = (temp_loss + vel_loss) / 2
             self.optimizer.zero_grad()
             loss.backward()

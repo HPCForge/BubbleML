@@ -1,0 +1,19 @@
+name: gravity
+transform: True
+steady_time: 300
+train_paths:
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-1.5.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-1.6.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-1.7.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-1.8.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-1.9.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.0.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.1.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.3.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.4.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.6.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.8.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.9.hdf5
+val_paths:
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.7.hdf5
+  - ${data_base_dir}/FlowBoiling-VelScale-FC72-2D-0.1/inletVelScale-2.5.hdf5

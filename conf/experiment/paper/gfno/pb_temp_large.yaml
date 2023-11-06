@@ -17,7 +17,7 @@ train:
 model:
   model_name: gfno
   modes: 64
-  width: 64
+  width: 96
   reflection: False
   domain_padding: 0.1
 

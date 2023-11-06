@@ -1,31 +1,29 @@
-torch_dataset_name: temp_input_dataset 
+torch_dataset_name: vel_dataset 
 
-# torch distributed does not support complex parameters
 distributed: False
 
 train:
-  max_epochs: 250 
-  batch_size: 4
+  max_epochs: 25
+  batch_size: 8
   shuffle_data: True
   time_window: 5
   future_window: 5
   push_forward_steps: 1
   use_coords: True
   noise: True
-  downsample_factor: 2 
+  downsample_factor: 2
 
 model:
   model_name: gfno
   modes: 64
-  width: 64
-  reflection: False
+  width: 32
   domain_padding: 0.1
+  reflection: False
 
 optimizer:
-  initial_lr: 1e-3
+  initial_lr: 5e-4
   weight_decay: 0.01
 
 lr_scheduler:
-  name: step
-  factor: 0.5
-  patience: 75
+  name: cosine
+  eta_min: 1e-6
