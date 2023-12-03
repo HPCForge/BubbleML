@@ -3,7 +3,7 @@
 #SBATCH -N 1
 #SBATCH -n 8
 #SBATCH --gres=gpu:A100:1
-#SBATCH --mem=32G
+#SBATCH --mem=128G
 #SBATCH --time=016:00:00
 
 module load python/3.10.2
@@ -12,4 +12,4 @@ module load gcc/11.2.0
 
 source /pub/nsankar1/envs/sciml/bin/activate
 
-python scripts/train.py
+python FNO_super_res_benchmark.py

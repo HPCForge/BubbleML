@@ -103,23 +103,27 @@ def interface_rmse(pred, label, dfun):
     mses = []
     for i in range(pred.size(0)):
         squared_error = (pred[i] - label[i]) ** 2
-        mask = torch.tensor(get_interface_mask(dfun[i].numpy()))
+        mask = torch.tensor(get_interface_mask(dfun[i]))
         interface_mse = torch.mean(squared_error[mask])
         mses.append(interface_mse)
     return torch.sqrt(torch.tensor(mses)).sum() / pred.size(0)
 
-@nb.njit
+#@nb.njit
 def get_interface_mask(dgrid):
-    interface = np.zeros(dgrid.shape).astype(np.bool_)
-    [rows, cols] = dgrid.shape
-    for i in range(rows):
-        for j in range(cols):
-            adj = ((i < rows - 1 and dgrid[i][j] * dgrid[i+1, j  ] <= 0) or
-                   (i > 0 and dgrid[i][j] * dgrid[i-1, j  ] <= 0) or
-                   (j < cols - 1 and dgrid[i][j] * dgrid[i,   j+1] <= 0) or
-                   (j > 0 and dgrid[i][j] * dgrid[i,   j-1] <= 0))
-            interface[i][j] = adj
-    return interface
+    [window, rows, cols] = dgrid.shape
+    up, down = dgrid[:,1:,:]*dgrid[:,:-1,:], dgrid[:,1:,:]*dgrid[:,:-1,:]
+    left, right = dgrid[:,:,1:]*dgrid[:,:,:-1], dgrid[:,:,1:]*dgrid[:,:,:-1]
+
+    side_pad = torch.ones(window, rows, 1)
+    top_pad = torch.ones(window, 1, cols)
+
+    left = torch.cat((side_pad, left), dim = -1)
+    right = torch.cat((right, side_pad), dim = -1)
+    down = torch.cat((top_pad, down), dim = -2)
+    up = torch.cat((up, top_pad), dim = -2)
+
+    mask = ((left < 0) + (right < 0) + (up < 0) + (down < 0)) > 0
+    return mask
 
 def fourier_error(pred, target, Lx, Ly):
     r""" This function is taken and modified from PDEBench
