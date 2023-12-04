@@ -152,8 +152,8 @@ for i in range(4):
             batch, label, dfun = format_input(temperature, temperature_ds, dfun_ds, velx, vely, coord)
 
             #print(label.shape, batch.shape)
-
-            out = model(batch)
+            with torch.no_grad():
+                out = model(batch)
             
             loss = F.mse_loss(out, label)
             loss_interface = interface_rmse(out, label, dfun)

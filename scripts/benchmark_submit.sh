@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -p free-gpu
 #SBATCH -N 1
-#SBATCH -n 8
+#SBATCH --mem-per-cpu=6G    # requesting max memory per CPU
+#SBATCH --ntasks=30         # requesting 30 CPUS
 #SBATCH --gres=gpu:A100:1
-#SBATCH --mem=128G
 #SBATCH --time=016:00:00
 
 module load python/3.10.2
