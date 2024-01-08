@@ -12,4 +12,4 @@ module load gcc/11.2.0
 
 source /pub/nsankar1/envs/sciml/bin/activate
 
-python scripts/train.py
+python sciml/train.py

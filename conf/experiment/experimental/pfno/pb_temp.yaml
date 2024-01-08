@@ -1,0 +1,36 @@
+torch_dataset_name: temp_input_dataset_PDE
+
+distributed: False
+
+train:
+  max_epochs: 250
+  batch_size: 2
+  shuffle_data: True
+  time_window: 5
+  future_window: 5
+  push_forward_steps: 1
+  use_coords: True
+  noise: True
+  downsample_factor: 1
+
+model:
+  model_name: pfno
+  upscale_layer: 1
+  upscale_factor: 2
+  fmode_frac: [0.66, 0.66]
+  hidden_channels: 64
+  domain_padding: None
+  n_layers: 4
+  norm: 'group_norm'
+  separable: False
+  modes: 64
+
+
+optimizer:
+  initial_lr: 1e-3
+  weight_decay: 1e-6
+  temporal_decay_factor: 1
+
+lr_scheduler:
+  name: cosine
+  eta_min: 1e-5

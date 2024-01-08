@@ -52,10 +52,11 @@ def compute_metrics(pred, label, dfun):
         fourier_high=high
     )
 
-def write_metrics(pred, label, iter, stage, writer):
+def write_metrics(pred, label, temp_pde_loss, iter, stage, writer):
     writer.add_scalar(f'{stage}/MAE', mae(pred, label), iter)
     writer.add_scalar(f'{stage}/RMSE', rmse(pred, label), iter)
     writer.add_scalar(f'{stage}/MaxERror', max_error(pred, label), iter)
+    writer.add_scalar(f'{stage}/tempPDE', temp_pde_loss, iter)
 
 def mae(pred, label):
     return F.l1_loss(pred, label)

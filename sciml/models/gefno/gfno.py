@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import math
 
-from neuralop.models.padding import DomainPadding
+from neuralop.layers.padding import DomainPadding
 
 # ----------------------------------------------------------------------------------------------------------------------
 # GFNO2d

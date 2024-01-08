@@ -19,15 +19,18 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from op_lib.disk_hdf5_dataset import (
         DiskTempInputDataset,
+        DiskTempPDEInputDataset,
         DiskTempVelDataset
 )
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
+        TempPDEInputDataset,
         TempVelDataset
 )
 
 from op_lib.temp_trainer import TempTrainer
+from op_lib.temp_trainer import TempTrainerPDE
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
 from op_lib.schedule_utils import LinearWarmupLR
@@ -38,11 +41,13 @@ from models.get_model import get_model
 
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
+    'temp_input_dataset_PDE': (DiskTempPDEInputDataset, TempPDEInputDataset),
     'vel_dataset': (DiskTempVelDataset, TempVelDataset)
 }
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
+    'temp_input_dataset_PDE': TempTrainerPDE,
     'vel_dataset': PushVelTrainer
 }
 

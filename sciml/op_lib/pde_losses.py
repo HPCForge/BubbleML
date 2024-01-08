@@ -7,10 +7,7 @@ import torch.nn.functional as F
 class Temp_PDE_Loss(object):
     def __init__(self, runtime_params, decay_rate):
         
-        self.param_dict = {}
-        for param in runtime_params:
-            self.param_dict[param[0].decode().strip()] = param[1]
-            
+        self.param_dict = runtime_params
         self.decay_rate = decay_rate
     
     def compute_gradient(self, temp_field, resolution):
@@ -21,7 +18,10 @@ class Temp_PDE_Loss(object):
         
         for (i,res) in enumerate(resolution):
             dim = [-len(resolution)+((i+k)%len(resolution)) for k in range(1,len(resolution),1)]
-            grad.append(self.trim_ends(self.compute_derivative(temp_field, res, -len(resolution)+i), dim).unsqueeze(0))
+            if i == 0:
+                grad.append(self.trim_ends(self.compute_derivative(temp_field, res, -len(resolution)+i, -1), dim).unsqueeze(0))
+            else:
+                grad.append(self.trim_ends(self.compute_derivative(temp_field, res, -len(resolution)+i, 1), dim).unsqueeze(0))
     
         grad = torch.cat(grad, dim = 0)
         
@@ -51,7 +51,7 @@ class Temp_PDE_Loss(object):
         
         # return temp_lap
     
-    def compute_derivative(self, field, resolution, dim):
+    def compute_derivative(self, field, resolution, dim, direction = 1):
         N = field.shape
         
         resh = [1] * len(N)
@@ -60,22 +60,33 @@ class Temp_PDE_Loss(object):
         reps = list(N)
         reps[dim] = 1
         
-        k = torch.fft.fftfreq(N[dim], resolution).reshape(resh).repeat(reps)*resolution
+        k = (torch.fft.fftfreq(N[dim], resolution).reshape(resh).repeat(reps)*resolution).cuda()
     
         field_derivative = torch.fft.fft(field, dim = dim)
-        field_derivative = field_derivative * (torch.exp(2j * np.pi * k) - 1)
+
+        if direction == 1:
+            field_derivative = field_derivative * (torch.exp(2j * np.pi * k) - 1)
+        else:
+            field_derivative = field_derivative * (1 - torch.exp(-2j * np.pi * k))
+        
         field_derivative = torch.narrow(field_derivative, dim, 0, N[dim]//2 + 1)
         field_derivative = torch.fft.irfft(field_derivative, dim = dim)
-        field_derivative = torch.narrow(field_derivative, dim, 0, N[dim]-1)/resolution
+
+        if direction == 1:
+            field_derivative = torch.narrow(field_derivative, dim, 0, N[dim]-1)/resolution
+        else:
+            field_derivative = torch.narrow(field_derivative, dim, 1, N[dim]-1)/resolution
     
         return field_derivative
     
     def compose_diffusivity(self, dfun):        
-        Re = self.param_dict['ins_invreynolds']
-        Pr = self.param_dict['ht_prandtl']
-        k = self.param_dict['mph_thcogas']
-        Cp = self.param_dict['mph_cpgas']
-        rho = self.param_dict['mph_rhogas']
+        Re = self.param_dict['ins_invreynolds'][0]
+        Pr = self.param_dict['ht_prandtl'][0]
+        k = self.param_dict['mph_thcogas'][0]
+        Cp = self.param_dict['mph_cpgas'][0]
+        rho = self.param_dict['mph_rhogas'][0]
+
+        #print("RUNTIMEPARAMS: ", Re, Pr, k, Cp, rho)
         
         alpha = k/(Cp*rho)
     
@@ -98,7 +109,7 @@ class Temp_PDE_Loss(object):
         reps[0] = 2
         diffu.unsqueeze(0).repeat(reps)
     
-        spatial_grad_scaled = diffu*spatial_grad
+        spatial_grad_scaled = diffu.cuda()*spatial_grad
     
         spatial_grad_scaled = F.pad(spatial_grad_scaled, (0,1,0,1), 'constant', 0)
         #spatial_grad_scaled[-2] = F.pad(spatial_grad_scaled[-2], (0,0,0,1), 'constant', 0)
@@ -110,7 +121,7 @@ class Temp_PDE_Loss(object):
         grad_2_y = self.trim_ends(self.trim_ends(grad_2_y, [-2, -1]), [-1])
     
         vel = torch.stack((self.trim_ends(vely, [-2, -1]), self.trim_ends(velx, [-2, -1])))
-        convection = vel*spatial_grad
+        convection = vel.cuda()*spatial_grad
         convection = torch.sum(convection, dim = 0)
     
         convection = self.trim_ends(convection, [-2, -1])
@@ -127,6 +138,12 @@ class Temp_PDE_Loss(object):
     def trim_ends(self, field, dim):
         for d in dim:
             field = torch.narrow(field, d, 0, field.shape[d] - 1)
+    
+        return field
+    
+    def trim_start(self, field, dim):
+        for d in dim:
+            field = torch.narrow(field, d, 1, field.shape[d])
     
         return field
     

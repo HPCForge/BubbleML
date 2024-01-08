@@ -14,6 +14,7 @@ _UNET_ARENA = 'unet_arena'
 _UFNET = 'ufnet'
 
 _FNO = 'fno'
+_PFNO = 'pfno'
 _UNO = 'uno'
 
 _FFNO = 'factorized_fno'
@@ -27,7 +28,8 @@ _MODEL_LIST = [
     _FNO,
     _UNO,
     _FFNO,
-    _GFNO
+    _GFNO,
+    _PFNO
 ]
 
 def get_model(model_name,
@@ -73,6 +75,21 @@ def get_model(model_name,
                     rank=exp.model.rank,
                     factorization='tucker',
                     implementation='factorized',
+                    separable=False)
+    elif model_name == _PFNO:
+        output_scaling_factor = [1]*exp.model.n_layers
+        output_scaling_factor[exp.model.upscale_layer] = exp.model.upscale_factor
+        model = FNO(n_modes=(exp.model.modes, exp.model.modes),
+                    hidden_channels=exp.model.hidden_channels,
+                    domain_padding=exp.model.domain_padding[0],
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    n_layers=exp.model.n_layers,
+                    norm=exp.model.norm,
+                    #rank=exp.model.rank,
+                    factorization='tucker',
+                    implementation='factorized',
+                    output_scaling_factor = output_scaling_factor,
                     separable=False)
     elif model_name == _UNO:
         model = UNO(in_channels=in_channels, 
