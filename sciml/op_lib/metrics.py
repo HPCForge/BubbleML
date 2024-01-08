@@ -111,12 +111,12 @@ def interface_rmse(pred, label, dfun):
 
 #@nb.njit
 def get_interface_mask(dgrid):
-    [window, rows, cols] = dgrid.shape
-    up, down = dgrid[:,1:,:]*dgrid[:,:-1,:], dgrid[:,1:,:]*dgrid[:,:-1,:]
-    left, right = dgrid[:,:,1:]*dgrid[:,:,:-1], dgrid[:,:,1:]*dgrid[:,:,:-1]
+    [rows, cols] = dgrid.shape
+    up, down = dgrid[1:,:]*dgrid[:-1,:], dgrid[1:,:]*dgrid[:-1,:]
+    left, right = dgrid[:,1:]*dgrid[:,:-1], dgrid[:,1:]*dgrid[:,:-1]
 
-    side_pad = torch.ones(window, rows, 1)
-    top_pad = torch.ones(window, 1, cols)
+    side_pad = torch.ones(rows, 1)
+    top_pad = torch.ones(1, cols)
 
     left = torch.cat((side_pad, left), dim = -1)
     right = torch.cat((right, side_pad), dim = -1)

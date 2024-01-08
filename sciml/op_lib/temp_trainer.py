@@ -263,27 +263,31 @@ class TempTrainerPDE:
         self.model.eval()
         for iter, (coords, temp, vel, label, vel_future_unormalized, dfun_future, run_time_params, resolution, temp_scale) in enumerate(self.val_dataloader):
             PDE_loss_class = Temp_PDE_Loss(run_time_params, self.cfg.optimizer.temporal_decay_factor)
+
+            resolution = [r[0] for r in resolution]
+
             coords = coords.to(self.local_rank).float()
             temp = temp.to(self.local_rank).float()
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
 
-            last_input_temp = temp[:,-1]
+            last_input_temp = temp[:,-1].reshape(temp.shape[0], 1, temp.shape[2], temp.shape[3])
             last_input_temp = resample(last_input_temp, self.cfg.model.upscale_factor, [-2, -1])
-            velx = vel_future_unormalized[0::2]
-            vely = vel_future_unormalized[1::2]
+
+            velx = resample(vel_future_unormalized[:,0::self.cfg.model.upscale_factor], self.cfg.model.upscale_factor, [-2, -1])
+            vely = resample(vel_future_unormalized[:,1::self.cfg.model.upscale_factor], self.cfg.model.upscale_factor, [-2, -1])
 
             with torch.no_grad():
                 pred = self._forward_int(coords, temp, vel)
-                temp_loss = F.mse_loss(pred, label)
+                temp_loss = F.mse_loss(pred[:,:,0::self.cfg.model.upscale_factor,0::self.cfg.model.upscale_factor], label)
                 loss = temp_loss
-                pred_unormalized = ((pred+1)/2)*temp_scale
+                pred_unormalized = ((pred+1)/2)*temp_scale[0]
                 pred_unormalized = torch.cat([last_input_temp, pred_unormalized], dim = 1)
-                pde_loss = PDE_loss_class(pred_unormalized, velx, vely, dfun_future, resolution)
+                pde_loss = PDE_loss_class(pred_unormalized, velx, vely, resample(dfun_future, self.cfg.model.upscale_factor, [-2, -1]), resolution)
 
             print(f'val data loss: {loss}, val pde loss: {pde_loss}')
             global_iter = epoch * len(self.val_dataloader) + iter
-            write_metrics(pred, label, pde_loss, global_iter, 'Val', self.writer)
+            write_metrics(pred[:,:,0::self.cfg.model.upscale_factor,0::self.cfg.model.upscale_factor], label, pde_loss, global_iter, 'Val', self.writer)
             del temp, vel, label, PDE_loss_class
 
     def test(self, dataset, max_timestep=200):
@@ -295,7 +299,7 @@ class TempTrainerPDE:
             
             start = time.time()
             for timestep in range(0, time_lim, self.future_window):
-                coords, temp, vel, label = dataset[timestep]
+                coords, temp, vel, label, vel_future_unormalized, dfun_future, run_time_params, resolution, temp_scale = dataset[timestep]
                 coords = coords.to(self.local_rank).float().unsqueeze(0)
                 temp = temp.to(self.local_rank).float().unsqueeze(0)
                 vel = vel.to(self.local_rank).float().unsqueeze(0)
@@ -303,7 +307,7 @@ class TempTrainerPDE:
                 with torch.no_grad():
                     pred = self._forward_int(coords, temp, vel)
                     temp = F.hardtanh(pred.squeeze(0), -1, 1)
-                    dataset.write_temp(temp, timestep)
+                    dataset.write_temp(temp[:, 0::self.cfg.model.upscale_factor, 0::self.cfg.model.upscale_factor], timestep)
                     temps.append(temp.detach().cpu())
                     labels.append(label.detach().cpu())
             dur = time.time() - start
@@ -317,15 +321,15 @@ class TempTrainerPDE:
             print(temps.max(), temps.min())
             print(labels.max(), labels.min())
 
-            metrics = compute_metrics(temps, labels, dfun)
+            metrics = compute_metrics(temps[:, 0::self.cfg.model.upscale_factor, 0::self.cfg.model.upscale_factor], labels, dfun)
             print(metrics)
             
             #xgrid = dataset.get_x().permute((2, 0, 1))
             #print(heatflux(temps, dfun, self.val_variable, xgrid, dataset.get_dy()))
             #print(heatflux(labels, dfun, self.val_variable, xgrid, dataset.get_dy()))
             
-            plt_temp(temps, labels, self.model.__class__.__name__)
-            plt_iter_mae(temps, labels)
+            plt_temp(temps[:, 0::self.cfg.model.upscale_factor, 0::self.cfg.model.upscale_factor], labels, self.model.__class__.__name__)
+            plt_iter_mae(temps[:, 0::self.cfg.model.upscale_factor, 0::self.cfg.model.upscale_factor], labels)
 
             dataset.reset()
 
