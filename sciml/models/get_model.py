@@ -4,6 +4,7 @@ from .factorized_fno.factorized_fno import FNOFactorized2DBlock
 from .gefno.gfno import GFNO2d
 from .pdebench.unet import UNet2d 
 from .pdearena.unet import Unet, FourierUnet
+from .ConvolutionalNeuralOperator.CNOModule import CNO
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -21,6 +22,8 @@ _FFNO = 'factorized_fno'
 
 _GFNO = 'gfno'
 
+_CNO = 'cno'
+
 _MODEL_LIST = [
     _UNET_BENCH,
     _UNET_ARENA,
@@ -29,7 +32,8 @@ _MODEL_LIST = [
     _UNO,
     _FFNO,
     _GFNO,
-    _PFNO
+    _PFNO,
+    _CNO
 ]
 
 def get_model(model_name,
@@ -115,6 +119,13 @@ def get_model(model_name,
                        width=exp.model.width,
                        reflection=exp.model.reflection,
                        domain_padding=exp.model.domain_padding) # padding is NEW
+        
+    elif model_name == _CNO:
+        model = CNO(in_dim = in_channels, 
+                    in_size = exp.model.in_size, 
+                    N_layers = exp.model.n_layers,
+                    out_dim = exp.train.future_window)
+
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()

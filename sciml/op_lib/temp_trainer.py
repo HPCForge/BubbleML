@@ -101,7 +101,7 @@ class TempTrainer:
             mse_loss = F.mse_loss(pred, label).detach()
             print(f'train loss: {loss}, mse: {mse_loss}')
             global_iter = epoch * len(self.train_dataloader) + iter
-            write_metrics(pred, label, global_iter, 'Train', self.writer)
+            write_metrics(pred, label, 0, global_iter, 'Train', self.writer)
             del temp, vel, label
 
     def val_step(self, epoch):
@@ -117,7 +117,7 @@ class TempTrainer:
                 loss = temp_loss
             print(f'val loss: {loss}')
             global_iter = epoch * len(self.val_dataloader) + iter
-            write_metrics(pred, label, global_iter, 'Val', self.writer)
+            write_metrics(pred, label, 0, global_iter, 'Val', self.writer)
             del temp, vel, label
 
     def test(self, dataset, max_timestep=200):

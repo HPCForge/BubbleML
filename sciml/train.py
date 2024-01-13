@@ -155,6 +155,8 @@ def train_app(cfg):
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
 
+    print("In Channels: ", in_channels, "Out Channels: ", out_channels)
+
     # domain_rows and domain_cols are used to determine the number of modes
     # used in fourier models.
     _, domain_rows, domain_cols = train_dataset.datum_dim()
