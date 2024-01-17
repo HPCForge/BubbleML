@@ -17,7 +17,7 @@ dependencies:
   - pip
   - pip:
     - hydra-core
-    - neuraloperator
+    - neuraloperator=0.2.0
     - opencv-python
     - matplotlib
     - tensorboard
