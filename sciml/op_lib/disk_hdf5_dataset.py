@@ -232,3 +232,42 @@ class DiskTempVelDataset(DiskHDF5Dataset):
     #        temp.unsqueeze_(-1)
     #    base_time = timestep + self.time_window
     #    self._data['temperature'][base_time:base_time + self.future_window] = temp.cpu().numpy()
+
+class DiskVelPDEDataset(DiskHDF5Dataset):
+    r""" 
+    This is a dataset for predicting only Velocity specifically for
+    physics informed training. It assumes that velocities are known in 
+    every timestep. It also enables writing past predictions for 
+    velocity and using them to make future predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        coords_dim = 2 if use_coords else 0
+        self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
+        self.out_channels = self.future_window
+
+        self.run_time_params = {}
+        for param in self._data['real-runtime-params']:
+            self.run_time_params[param[0].decode().strip()] = param[1]
+        
+        self.resolution = [1, 
+              self._data['y'][0,1,0] - self._data['y'][0,0,0], 
+              self._data['x'][0,0,1] - self._data['x'][0,0,0]]
+
+    def __getitem__(self, timestep):
+        coords = self._get_coords(timestep)
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0) 
+        pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window + self.future_window)], dim=0)
+        pressure_future_unormalized = pressure[(-2*self.future_window):].clone()
+        pressure_future_unormalized = pressure_future_unormalized * self.pressure_scale
+        dfun_future = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
+        base_time = timestep + self.time_window 
+        label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
+        return (coords, *self._transform(vel, label), pressure_future_unormalized, dfun_future, self.run_time_params, self.resolution, self.vel_scale, self.pressure_scale))
