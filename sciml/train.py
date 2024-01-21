@@ -20,19 +20,21 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from op_lib.disk_hdf5_dataset import (
         DiskTempInputDataset,
         DiskTempPDEInputDataset,
-        DiskTempVelDataset
+        DiskTempVelDataset,
+        DiskVelPDEDataset
 )
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
         TempPDEInputDataset,
-        TempVelDataset
+        VelPDEInputDataset,
 )
 
 from op_lib.temp_trainer import TempTrainer
 from op_lib.temp_trainer import TempTrainerPDE
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib.vel_trainer import VelPDETrainer, TempVelDataset
 from op_lib.schedule_utils import LinearWarmupLR
 from op_lib import dist_utils
 
@@ -42,13 +44,15 @@ from models.get_model import get_model
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
     'temp_input_dataset_PDE': (DiskTempPDEInputDataset, TempPDEInputDataset),
-    'vel_dataset': (DiskTempVelDataset, TempVelDataset)
+    'vel_dataset': (DiskTempVelDataset, TempVelDataset),
+    'vel_dataset_PDE': (DiskVelPDEDataset, VelPDEInputDataset)
 }
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
     'temp_input_dataset_PDE': TempTrainerPDE,
-    'vel_dataset': PushVelTrainer
+    'vel_dataset': PushVelTrainer,
+    'vel_dataset_PDE': VelPDETrainer
 }
 
 def build_datasets(cfg):
@@ -70,6 +74,7 @@ def build_datasets(cfg):
                         push_forward_steps=push_forward_steps) for p in cfg.dataset.train_paths])
     train_max_temp = train_dataset.normalize_temp_()
     train_max_vel = train_dataset.normalize_vel_()
+    train_max_pressure = train_dataset.normalize_pressure_()
 
     # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
@@ -80,10 +85,12 @@ def build_datasets(cfg):
                         future_window=future_window) for p in cfg.dataset.val_paths])
     val_dataset.normalize_temp_(train_max_temp)
     val_dataset.normalize_vel_(train_max_vel)
+    val_dataset.normalize_pressure_(train_max_pressure)
 
     assert val_dataset.absmax_temp() <= 1.5
     assert val_dataset.absmax_vel() <= 1.5
-    return train_dataset, val_dataset, train_max_temp, train_max_vel
+    assert val_dataset.absmax_pressure() <= 1.5
+    return train_dataset, val_dataset, train_max_temp, train_max_vel, train_max_pressure
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
     if cfg.experiment.distributed:
@@ -141,7 +148,7 @@ def train_app(cfg):
     
     writer = SummaryWriter(log_dir=log_dir)
 
-    train_dataset, val_dataset, train_max_temp, train_max_vel = build_datasets(cfg)
+    train_dataset, val_dataset, train_max_temp, train_max_vel, train_max_pressure = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
     #tail = cfg.dataset.val_paths[0].split('-')[-1]
@@ -235,6 +242,7 @@ def train_app(cfg):
             # used for normalization
             'train_data_max_temp': train_max_temp,
             'train_data_max_vel': train_max_vel,
+            'train_data_max_pressure': train_max_pressure,
             # can be used to restart the learning rate
             'epochs': exp.train.max_epochs,
             # info needed to reconstruct the model

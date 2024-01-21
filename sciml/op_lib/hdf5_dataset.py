@@ -22,6 +22,9 @@ class HDF5ConcatDataset(ConcatDataset):
 
     def absmax_temp(self):
         return max(d.absmax_temp() for d in self.datasets)
+    
+    def absmax_pressure(self):
+        return max(d.absmax_pressure() for d in self.datasets)
 
     def normalize_temp_(self, absmax_temp=None):
         if not absmax_temp:
@@ -36,6 +39,13 @@ class HDF5ConcatDataset(ConcatDataset):
         for d in self.datasets:
             d.normalize_vel_(absmax_vel)
         return absmax_vel
+    
+    def normalize_pressure_(self, absmax_pressure=None):
+        if not absmax_pressure:
+            absmax_pressure = self.absmax_pressure()
+        for d in self.datasets:
+            d.normalize_pressure_(absmax_pressure)
+        return absmax_pressure
 
     def datum_dim(self):
         return self.datasets[0].datum_dim()
@@ -64,6 +74,7 @@ class HDF5Dataset(Dataset):
         self._data = {}
         with h5py.File(self.filename, 'r') as f:
             self._data['temp'] = torch.nan_to_num(torch.from_numpy(f['temperature'][:][self.steady_time:]))
+            self._data['press'] = torch.nan_to_num(torch.from_numpy(f['pressure'][:][self.steady_time:]))
             self._data['velx'] = torch.nan_to_num(torch.from_numpy(f['velx'][:][self.steady_time:]))
             self._data['vely'] = torch.nan_to_num(torch.from_numpy(f['vely'][:][self.steady_time:]))
             self._data['dfun'] = torch.nan_to_num(torch.from_numpy(f['dfun'][:][self.steady_time:]))
@@ -72,9 +83,11 @@ class HDF5Dataset(Dataset):
             self._data['real-runtime-params'] = f['real-runtime-params'][:]
 
         self._redim_temp(self.filename)
-        if self.temp_scale and self.vel_scale:
+        if self.temp_scale and self.vel_scale and self.pressure_scale:
             self.normalize_temp_(self.temp_scale)
             self.normalize_vel_(self.vel_scale)
+            self.normalize_pressure_(self.pressure_scale)
+
 
     def datum_dim(self):
         return self._data['temp'].size()
@@ -109,6 +122,10 @@ class HDF5Dataset(Dataset):
             self._data[v] = self._data[v] / scale
         self.vel_scale = scale
 
+    def normalize_pressure_(self, scale):
+        self._data['pressure'] = 2 * (self._data['pressure'] / scale) - 1
+        self.pressure_scale = scale
+
     def get_x(self):
         return self._data['x'][self.time_window:]
     
@@ -122,6 +139,9 @@ class HDF5Dataset(Dataset):
 
     def _get_temp(self, timestep):
         return self._data['temp'][timestep]
+
+    def _get_press(self, timestep):
+        return self._data['press'][timestep]
 
     def _get_vel_stack(self, timestep):
         return torch.stack([
@@ -238,6 +258,50 @@ class TempPDEInputDataset(HDF5Dataset):
             temp.unsqueeze_(-1)
         base_time = timestep + self.time_window
         self._data['temp'][base_time:base_time + self.future_window] = temp
+
+class VelPDEInputDataset(HDF5Dataset):
+    r""" 
+    This is a dataset for predicting only Velocity specifically for
+    physics informed training. It assumes that velocities are known in 
+    every timestep. It also enables writing past predictions for 
+    velocity and using them to make future predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        coords_dim = 2 if use_coords else 0
+        self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
+        self.out_channels = self.future_window
+
+        self.run_time_params = {}
+        for param in self._data['real-runtime-params']:
+            self.run_time_params[param[0].decode().strip()] = param[1]
+        
+        self.resolution = [1, 
+              self._data['y'][0,1,0] - self._data['y'][0,0,0], 
+              self._data['x'][0,0,1] - self._data['x'][0,0,0]]
+
+    def __getitem__(self, timestep):
+        coords = self._get_coords(timestep)
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0) 
+        pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window + self.future_window)], dim=0)
+        pressure_future_unormalized = pressure[(-2*self.future_window):].clone()
+        pressure_future_unormalized = pressure_future_unormalized * self.pressure_scale
+        dfun_future = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
+        base_time = timestep + self.time_window 
+        label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
+        return (coords, *self._transform(vel, label), pressure_future_unormalized, dfun_future, self.run_time_params, self.resolution)
+
+    def write_vel(self, vel, timestep):
+        base_time = timestep + self.time_window
+        self._data['velx'][base_time:base_time + self.future_window] = vel[0::2]
+        self._data['vely'][base_time:base_time + self.future_window] = vel[1::2]
 
 class TempVelDataset(HDF5Dataset):
     r"""
