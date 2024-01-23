@@ -270,4 +270,4 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
         dfun_future = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
         base_time = timestep + self.time_window 
         label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
-        return (coords, *self._transform(vel, label), pressure_future_unormalized, dfun_future, self.run_time_params, self.resolution, self.vel_scale, self.pressure_scale))
+        return (coords, *self._transform(vel, label), pressure_future_unormalized, dfun_future, self.run_time_params, self.resolution)
