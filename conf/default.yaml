@@ -2,7 +2,7 @@
 # Either explicitly set it in this file or set it as a command-line argument
 # when running the train script.
 data_base_dir: /share/crsp/lab/amowli/share/BubbleML2
-log_dir: /dfs6/pub/nsankar1/res_exp/BubbleML/logs
+log_dir: /dfs6/pub/hthomare/PINNS/logs
 
 train: True
 test: True
