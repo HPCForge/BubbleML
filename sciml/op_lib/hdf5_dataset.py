@@ -123,7 +123,7 @@ class HDF5Dataset(Dataset):
         self.vel_scale = scale
 
     def normalize_pressure_(self, scale):
-        self._data['pressure'] = 2 * (self._data['pressure'] / scale) - 1
+        self._data['press'] = 2 * (self._data['press'] / scale) - 1
         self.pressure_scale = scale
 
     def get_x(self):
