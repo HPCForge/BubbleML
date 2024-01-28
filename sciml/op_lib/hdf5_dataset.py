@@ -114,6 +114,9 @@ class HDF5Dataset(Dataset):
     def absmax_vel(self):
         return max(self._data['velx'].abs().max(), self._data['vely'].abs().max())
 
+    def absmax_pressure(self):
+        return self._data['press'].abs().max()
+
     def normalize_temp_(self, scale):
         self._data['temp'] = 2 * (self._data['temp'] / scale) - 1
         self.temp_scale = scale
