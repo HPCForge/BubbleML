@@ -74,7 +74,7 @@ class DiskHDF5Dataset(Dataset):
         return max(np.abs(self._get_data('velx')).max(), np.abs(self._get_data('vely')).max())
 
     def absmax_pressure(self):
-        return np.abs(self._get_data('presure')).max()
+        return np.abs(self._get_data('pressure')).max()
 
     def normalize_temp_(self, scale):
         self.temp_scale = scale
