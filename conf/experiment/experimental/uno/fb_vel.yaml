@@ -20,7 +20,7 @@ model:
   norm: 'group_norm'
   n_layers: 5
   uno_out_channels: [64,64,64,64,64]
-  uno_n_modes: [[128,128],[64, 64],[64,64],[128,128]]
+  uno_n_modes: [[128,128],[64, 64],[64,64],[128,128], [128,128]]
   uno_scalings: [[1,1],[0.5,0.5],[1,1],[2,2],[1,1]]
   domain_padding: [0.2, 0.2]
 
