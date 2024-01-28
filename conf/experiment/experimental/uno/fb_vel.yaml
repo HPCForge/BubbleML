@@ -1,4 +1,4 @@
-torch_dataset_name: vel_dataset 
+torch_dataset_name: vel_dataset_PDE 
 
 distributed: False
 
