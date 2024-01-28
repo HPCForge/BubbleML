@@ -109,7 +109,7 @@ class DiskHDF5Dataset(Dataset):
     def _get_press(self, timestep):
         assert self.press_scale is not None, 'Normalize not called?'
         press = torch.from_numpy(self._index_data('pressure', timestep))
-        return press /
+        return press / self.press_scale
 
     def _get_coords(self, timestep):
         x = torch.from_numpy(self._index_data('x', timestep))
