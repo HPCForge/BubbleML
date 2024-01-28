@@ -31,6 +31,7 @@ class DiskHDF5Dataset(Dataset):
         self.wall_temp = self._get_wall_temp(filename)
         self.temp_scale = None
         self.vel_scale = None
+        self.press_scale = None
 
     def datum_dim(self):
         return self._data['temperature'][:].shape
@@ -72,11 +73,17 @@ class DiskHDF5Dataset(Dataset):
     def absmax_vel(self):
         return max(np.abs(self._get_data('velx')).max(), np.abs(self._get_data('vely')).max())
 
+    def absmax_pressure(self):
+        return np.abs(self._get_data('presure')).max()
+
     def normalize_temp_(self, scale):
         self.temp_scale = scale
 
     def normalize_vel_(self, scale):
         self.vel_scale = scale
+
+    def normalize_pressure_(self, scale):
+        self.press_scale = scale
 
     def get_dy(self):
         r""" dy is the grid spacing in the y direction.
@@ -98,6 +105,11 @@ class DiskHDF5Dataset(Dataset):
             torch.from_numpy(self._index_data('vely', timestep)),
         ], dim=0)
         return vel / self.vel_scale
+
+    def _get_press(self, timestep):
+        assert self.press_scale is not None, 'Normalize not called?'
+        press = torch.from_numpy(self._index_data('pressure', timestep))
+        return press /
 
     def _get_coords(self, timestep):
         x = torch.from_numpy(self._index_data('x', timestep))
@@ -250,7 +262,7 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
                  push_forward_steps=1):
         super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
-        self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
+        self.in_channels = 2 * self.time_window + coords_dim + 2 * self.future_window
         self.out_channels = self.future_window
 
         self.run_time_params = {}
@@ -264,10 +276,9 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
     def __getitem__(self, timestep):
         coords = self._get_coords(timestep)
         vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0) 
-        pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window + self.future_window)], dim=0)
-        pressure_future_unormalized = pressure[(-2*self.future_window):].clone()
-        pressure_future_unormalized = pressure_future_unormalized * self.pressure_scale
+        pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
+        pressure_future_unormalized = pressure * self.press_scale
+        # Only data from future time step
         dfun_future = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
-        base_time = timestep + self.time_window 
-        label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
+        label = torch.cat([self._get_vel_stack(time_step + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
         return (coords, *self._transform(vel, label), pressure_future_unormalized, dfun_future, self.run_time_params, self.resolution)

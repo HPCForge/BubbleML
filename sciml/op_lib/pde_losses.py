@@ -278,7 +278,7 @@ class Vel_PDE_Loss(object):
         return pressure
 
     def velocity_equation2D(self, pressure_field, velx, vely, dfun, resolution):
-        vel = torch.stack((self.trim_ends(vely, [-2, -1]), self.trim_ends(velx, [-2, -1])))
+        vel = torch.stack((self.trim_ends(velx, [-2, -1]), self.trim_ends(vely, [-2, -1])))
         
         grad_1 = self.compute_gradient(vel, resolution)
     
