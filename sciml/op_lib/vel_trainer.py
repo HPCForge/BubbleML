@@ -185,6 +185,13 @@ class VelPDETrainer:
         self.future_window = future_window
         self.use_coords = cfg.train.use_coords
 
+    def _forward_int(self, coords, vel, dfun):
+        input = torch.cat((vel, dfun), dim=1)
+        if self.cfg.train.use_coords:
+            input = torch.cat((coords, input), dim=1)
+        pred = self.model(input)
+        return pred
+
     def save_checkpoint(self, log_dir, dataset_name):
         timestamp = int(time.time())
         if self.cfg.distributed:
