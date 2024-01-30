@@ -3,7 +3,7 @@ torch_dataset_name: vel_dataset_PDE
 distributed: False
 
 train:
-  max_epochs: 25
+  max_epochs: 5
   batch_size: 4
   shuffle_data: True
   time_window: 5
@@ -30,3 +30,4 @@ optimizer:
 
 lr_scheduler:
   name: cosine
+  eta_min: 1e-6
