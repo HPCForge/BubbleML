@@ -27,6 +27,7 @@ model:
 optimizer:
   initial_lr: 1e-3
   weight_decay: 1e-5
+  temporal_decay_factor: 1
 
 lr_scheduler:
   name: cosine
