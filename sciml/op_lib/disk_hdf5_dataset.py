@@ -276,7 +276,7 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
     def __getitem__(self, timestep):
         coords = self._get_coords(timestep)
         vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0) 
-        dfun = torch.cat([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0) 
+        dfun = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0) 
         pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
         pressure_future_unormalized = pressure * self.press_scale
         # Only data from future time step
