@@ -280,8 +280,8 @@ class VelPDEInputDataset(HDF5Dataset):
                  push_forward_steps=1):
         super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
-        self.in_channels = 2 * self.time_window + coords_dim
-        self.out_channels = self.future_window
+        self.in_channels = 3 * self.time_window + coords_dim
+        self.out_channels = self.future_window*2
 
         self.run_time_params = {}
         for param in self._data['real-runtime-params']:
