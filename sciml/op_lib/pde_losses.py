@@ -285,7 +285,7 @@ class Vel_PDE_Loss(object):
         du_dt = grad_1[0]
         grad_u = grad_1[1:]
 
-        grad_pressure = self.compute_gradient(pressure_field, resolution)[1:]
+        grad_pressure = self.compute_gradient(self.trim_start(pressure_field, [-2, -1]), resolution)[1:]
 
     
         visc_const = self.trim_ends(self.compose_viscosity(dfun), [-2, -1])
