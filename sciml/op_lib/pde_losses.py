@@ -310,7 +310,7 @@ class Vel_PDE_Loss(object):
         return du_dt, convection, grad_pressure, grad_2_x, grad_2_y
     
     def vel_loss_function(self, pressure_field, velx, vely, dfun, resolution):
-        temporal_grad, convection, grad_pressure, grad_2_x, grad_2_y = self.heat_equation2D(pressure_field, velx, vely, dfun, resolution)
+        temporal_grad, convection, grad_pressure, grad_2_x, grad_2_y = self.velocity_equation2D(pressure_field, velx, vely, dfun, resolution)
         
         return temporal_grad+convection+grad_pressure-grad_2_x-grad_2_y - 1j
     
