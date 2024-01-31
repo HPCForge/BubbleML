@@ -188,7 +188,7 @@ class VelPDETrainer:
     def _forward_int(self, coords, vel, dfun):
         input = torch.cat((vel, dfun), dim=1)
         if self.cfg.train.use_coords:
-            input = torch.cat((coords, input), dim=1)
+            input = torch.cat((coords, input), dim=1) # TODO: DIM issue 
         pred = self.model(input)
         return pred
 

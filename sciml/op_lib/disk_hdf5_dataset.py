@@ -262,8 +262,8 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
                  push_forward_steps=1):
         super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
         coords_dim = 2 if use_coords else 0
-        self.in_channels = 2 * self.time_window + coords_dim + 2 * self.future_window
-        self.out_channels = self.future_window
+        self.in_channels = 2 * self.time_window + coords_dim
+        self.out_channels = self.future_window*2
 
         self.run_time_params = {}
         for param in self._data['real-runtime-params']:
@@ -275,7 +275,7 @@ class DiskVelPDEDataset(DiskHDF5Dataset):
 
     def __getitem__(self, timestep):
         coords = self._get_coords(timestep)
-        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0) 
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0) 
         dfun = torch.cat([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0) 
         pressure = torch.stack([self._get_press(timestep + k) for k in range(self.time_window, self.time_window + self.future_window)], dim=0)
         pressure_future_unormalized = pressure * self.press_scale
