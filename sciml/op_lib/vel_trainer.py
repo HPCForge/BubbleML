@@ -230,6 +230,10 @@ class VelPDETrainer:
             coords = coords.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
             dfun = dfun.to(local_rank()).float()
+            vel_label = vel_label.to(local_rank()).float()
+            unnormalized_pressure = unnormalized_pressure.to(local_rank()).float()
+            dfun_future = dfun_future.to(local_rank()).float()
+
 
             vel_pred = self._forward_int(coords, vel, dfun)
             
@@ -242,7 +246,7 @@ class VelPDETrainer:
 
             print(vel_pred.size(), vel_label.size())
 
-            loss = (velx_loss + vely_loss + vel_pde_loss) / 2
+            loss = (velx_loss + vely_loss + vel_pde_loss) / 3
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -262,7 +266,9 @@ class VelPDETrainer:
             coords = coords.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
             dfun = dfun.to(local_rank()).float()
-            vel_label = vel_label[:, 0].to(local_rank()).float()
+            vel_label = vel_label.to(local_rank()).float()
+            unnormalized_pressure = unnormalized_pressure.to(local_rank()).float()
+            dfun_future = dfun_future.to(local_rank()).float()
 
             # val doesn't apply push-forward
             vel_x = vel_pred[:, 1]
