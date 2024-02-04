@@ -277,42 +277,44 @@ class Vel_PDE_Loss(object):
     
         return pressure
 
+
+
+
+
+
     def velocity_equation2D(self, pressure_field, velx, vely, dfun, resolution):
-        vel = torch.stack((self.trim_ends(velx, [-2, -1]), self.trim_ends(vely, [-2, -1])))
         
-        grad_1 = self.compute_gradient(vel, resolution)
-    
-        du_dt = grad_1[0]
-        grad_u = grad_1[1:]
+        #combine velocity in x and y dimensions
+        combined_magnitude = torch.sqrt(velx**2 + vely**2)
 
-        grad_pressure = []
-        dim = [-len(resolution)+((1+k)%len(resolution)) for k in range(1,len(resolution),1)]
-        grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[1], -2, -1), dim).unsqueeze(0))
-        dim = [-len(resolution)+((2+k)%len(resolution)) for k in range(1,len(resolution),1)]
-        grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[2], -1, -1), dim).unsqueeze(0))
-        grad_pressure = torch.cat(grad_pressure, dim = 0)
+        grad_mag = self.compute_gradient(combined_magnitude, resolution)
 
-    
-        visc_const = self.trim_ends(self.compose_viscosity(dfun), [-2, -1])
-        reps = [1]*(len(visc_const.shape)+1)
+        du_dt = grad_mag[0]
+        grad_vel = grad_mag[1:]
+
+        u_grad_u = grad_vel * combined_magnitude
+
+        
+        grad_pressure = self.compute_gradient(pressure_field, resolution)[1:]
+
+        pres_const = self.trim_ends(self.compose_pressure(dfun), [-2, -1])
+        reps = [1]*(len(pres_const.shape)+1)
         reps[0] = 2
-        visc_const.unsqueeze(0).repeat(reps)
-        spatial_grad_scaled = visc_const.cuda()*grad_u
+        pres_const.unsqueeze(0).repeat(reps)
+        pressure_term =  pres_const.cuda() * grad_pressure
+        pressure_term = F.pad(pressure_term, (0,1,0,1), 'constant', 0)
+
+        
+        visc_const = self.compose_diffusivity(dfun)
+        spatial_grad_scaled = visc_const.cuda()*grad_vel
         spatial_grad_scaled = F.pad(spatial_grad_scaled, (0,1,0,1), 'constant', 0)    
+       
+       
         grad_2_x = self.compute_derivative(spatial_grad_scaled[-1], resolution[-1], -1)
         grad_2_y = self.compute_derivative(spatial_grad_scaled[-2], resolution[-2], -2)
         grad_2_x = self.trim_ends(self.trim_ends(grad_2_x, [-2, -1]), [-2])
         grad_2_y = self.trim_ends(self.trim_ends(grad_2_y, [-2, -1]), [-1])
-    
-        convection = vel.cuda() * grad_u
-        convection = torch.sum(convection, dim = 0)
-        convection = self.trim_ends(convection, [-2, -1])
-    
-        du_dt = self.trim_ends(du_dt, [-2, -1])
-
-        # Make Fr^2
-    
-        return du_dt, convection, grad_pressure, grad_2_x, grad_2_y
+        return du_dt, u_grad_u, pressure_term, grad_2_x, grad_2_y
     
     def vel_loss_function(self, pressure_field, velx, vely, dfun, resolution):
         temporal_grad, convection, grad_pressure, grad_2_x, grad_2_y = self.velocity_equation2D(pressure_field, velx, vely, dfun, resolution)
