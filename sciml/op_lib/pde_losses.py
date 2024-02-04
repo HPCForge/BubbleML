@@ -290,6 +290,7 @@ class Vel_PDE_Loss(object):
         grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[1], -2, -1), dim).unsqueeze(0))
         dim = [-len(resolution)+((2+k)%len(resolution)) for k in range(1,len(resolution),1)]
         grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[2], -1, -1), dim).unsqueeze(0))
+        grad_pressure = torch.cat(grad_pressure, dim = 0)
 
     
         visc_const = self.trim_ends(self.compose_viscosity(dfun), [-2, -1])
