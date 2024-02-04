@@ -285,7 +285,11 @@ class Vel_PDE_Loss(object):
         du_dt = grad_1[0]
         grad_u = grad_1[1:]
 
-        grad_pressure = self.compute_gradient(self.trim_start(pressure_field, [-2, -1]), resolution)[1:]
+        grad_pressure = []
+        dim = [-len(resolution)+((1+k)%len(resolution)) for k in range(1,len(resolution),1)]
+        grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[1], -2, -1), dim).unsqueeze(0))
+        dim = [-len(resolution)+((2+k)%len(resolution)) for k in range(1,len(resolution),1)]
+        grad_pressure.append(self.trim_ends(self.compute_derivative(pressure_field, resolution[2], -1, -1), dim).unsqueeze(0))
 
     
         visc_const = self.trim_ends(self.compose_viscosity(dfun), [-2, -1])
