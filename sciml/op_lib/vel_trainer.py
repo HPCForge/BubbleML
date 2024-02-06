@@ -188,7 +188,7 @@ class VelPDETrainer:
     def _forward_int(self, coords, vel, dfun):
         input = torch.cat((vel, dfun), dim=1)
         if self.cfg.train.use_coords:
-            input = torch.cat((coords, input), dim=1) # TODO: DIM issue 
+            input = torch.cat((coords, input), dim=1)
         pred = self.model(input)
         return pred
 
@@ -270,14 +270,14 @@ class VelPDETrainer:
             unnormalized_pressure = unnormalized_pressure.to(local_rank()).float()
             dfun_future = dfun_future.to(local_rank()).float()
 
-            # val doesn't apply push-forward
-            vel_x = vel_pred[:, 1]
-            vel_y = vel_pred[:, 2]
+            print(vel_pred.shape)
+            vel_x = vel_pred[:, 0]
+            vel_y = vel_pred[:, 1]
 
             with torch.no_grad():
                 vel_pred = self._forward_int(coords, vel)
-                velx_loss = self.loss(vel_x, vel_label[:, 1])
-                vely_loss = self.loss(vel_y, vel_label[:, 2])
+                velx_loss = self.loss(vel_x, vel_label[:, 0])
+                vely_loss = self.loss(vel_y, vel_label[:, 1])
                 vel_pde_loss = PDE_loss_class(unnormalized_pressure, vel_x, vel_y, dfun_future, resolution)
            
             print(f'val loss: {velx_loss+vely_loss}, val pde loss: {vel_pde_loss}')

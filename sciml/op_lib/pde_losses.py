@@ -176,7 +176,7 @@ class Temp_PDE_Loss(object):
         heat_loss = self.heat_loss_function(temp_field, velx, vely, dfun, resolution) 
         TCDF = self.temporal_causality_decay_factor(heat_loss, dfun)
         heat_loss = torch.square(heat_loss)
-        for (i, factor) in enumerate(TCDF):
+        for (i, factor) in enumerate(TCdfun):
             heat_loss[:, i] * factor
         
         return torch.mean(heat_loss)
@@ -253,7 +253,8 @@ class Vel_PDE_Loss(object):
         if direction == 1:
             field_derivative = torch.narrow(field_derivative, dim, 0, N[dim]-1)/resolution
         else:
-            field_derivative = torch.narrow(field_derivative, dim, 1, N[dim]-1)/resolution
+            pass
+            # field_derivative = torch.narrow(field_derivative, dim, 1, N[dim]-1)/resolution
     
         return field_derivative
     
@@ -272,7 +273,7 @@ class Vel_PDE_Loss(object):
     def compose_pressure(self, dfun):
         rho = self.param_dict['mph_rhogas'][0]
             
-        pressure = - torch.ones(dfun.shape)
+        pressure = torch.ones(dfun.shape)
         pressure = torch.where(dfun > 0, pressure*(1/rho), pressure)
     
         return pressure
@@ -284,36 +285,41 @@ class Vel_PDE_Loss(object):
 
     def velocity_equation2D(self, pressure_field, velx, vely, dfun, resolution):
         
-        #combine velocity in x and y dimensions
         combined_magnitude = torch.sqrt(velx**2 + vely**2)
-
         grad_mag = self.compute_gradient(combined_magnitude, resolution)
+        combined_magnitude = self.trim_ends(combined_magnitude, [-3, -2, -1])
 
         du_dt = grad_mag[0]
         grad_vel = grad_mag[1:]
 
         u_grad_u = grad_vel * combined_magnitude
 
-        
+
         grad_pressure = self.compute_gradient(pressure_field, resolution)[1:]
 
-        pres_const = self.trim_ends(self.compose_pressure(dfun), [-2, -1])
+        pres_const = self.compose_pressure(dfun)
         reps = [1]*(len(pres_const.shape)+1)
         reps[0] = 2
         pres_const.unsqueeze(0).repeat(reps)
-        pressure_term =  pres_const.cuda() * grad_pressure
-        pressure_term = F.pad(pressure_term, (0,1,0,1), 'constant', 0)
+        pres_const = self.trim_ends(pres_const, [-2, -1])
+        pres_const = self.trim_start(pres_const, [-3])
 
-        
-        visc_const = self.compose_diffusivity(dfun)
+        pressure_term =  pres_const.cuda() * grad_pressure
+
+        visc_const = self.compose_viscosity(dfun)
+        visc_const = self.trim_ends(visc_const, [-2, -1])
+        visc_const = self.trim_start(visc_const, [-3])
         spatial_grad_scaled = visc_const.cuda()*grad_vel
-        spatial_grad_scaled = F.pad(spatial_grad_scaled, (0,1,0,1), 'constant', 0)    
-       
-       
+
         grad_2_x = self.compute_derivative(spatial_grad_scaled[-1], resolution[-1], -1)
         grad_2_y = self.compute_derivative(spatial_grad_scaled[-2], resolution[-2], -2)
-        grad_2_x = self.trim_ends(self.trim_ends(grad_2_x, [-2, -1]), [-2])
-        grad_2_y = self.trim_ends(self.trim_ends(grad_2_y, [-2, -1]), [-1])
+        grad_2_x = self.trim_ends(grad_2_x, [-2])
+        grad_2_y = self.trim_ends(grad_2_y, [-1])
+
+        # Match size of grad_2
+        pressure_term = self.trim_ends(pressure_term, [-2, -1])
+        u_grad_u = self.trim_ends(u_grad_u, [-2. -1])
+        du_dt = self.trim_ends(du_dt, [-2. -1])
         return du_dt, u_grad_u, pressure_term, grad_2_x, grad_2_y
     
     def vel_loss_function(self, pressure_field, velx, vely, dfun, resolution):
@@ -329,7 +335,7 @@ class Vel_PDE_Loss(object):
     
     def trim_start(self, field, dim):
         for d in dim:
-            field = torch.narrow(field, d, 1, field.shape[d])
+            field = torch.narrow(field, d, 1, field.shape[d]-1)
     
         return field
     
@@ -362,7 +368,7 @@ class Vel_PDE_Loss(object):
         vel_loss = self.vel_loss_function(pressure_field, velx, vely, dfun, resolution) 
         TCDF = self.temporal_causality_decay_factor(vel_loss, dfun)
         vel_loss = torch.square(vel_loss)
-        for (i, factor) in enumerate(TCDF):
+        for (i, factor) in enumerate(TCdfun):
             vel_loss[:, i] * factor
         
         return torch.mean(vel_loss)
