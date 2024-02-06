@@ -179,7 +179,7 @@ class VelPDETrainer:
         self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg
-        self.loss = LpLoss(d=2, reduce_dims=[0, 1])
+        self.loss = LpLoss(d=2)
 
         self.max_push_forward_steps = max_push_forward_steps
         self.future_window = future_window
@@ -237,11 +237,11 @@ class VelPDETrainer:
 
             vel_pred = self._forward_int(coords, vel, dfun)
             
-            vel_x = vel_pred[:, 1]
-            vel_y = vel_pred[:, 2]
+            vel_x = vel_pred[:, 0]
+            vel_y = vel_pred[:, 1]
 
-            velx_loss = self.loss(vel_x, vel_label[:, 1])
-            vely_loss = self.loss(vel_y, vel_label[:, 2])
+            velx_loss = self.loss(vel_x, vel_label[:, 0])
+            vely_loss = self.loss(vel_y, vel_label[:, 1])
             vel_pde_loss = PDE_loss_class(unnormalized_pressure, vel_x, vel_y, dfun_future, resolution)
 
             print(vel_pred.size(), vel_label.size())
