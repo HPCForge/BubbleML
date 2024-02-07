@@ -285,7 +285,7 @@ class Vel_PDE_Loss(object):
 
 
     def velocity_equation2D(self, pressure_field, velx, vely, dfun, resolution):
-        combined_magnitude = torch.sqrt(vx**2 + vy**2)
+        combined_magnitude = torch.sqrt(velx**2 + vely**2)
         grad_mag = self.compute_gradient(combined_magnitude, resolution)
         combined_magnitude = self.trim_ends(combined_magnitude, [-3, -2, -1])
 
@@ -295,9 +295,9 @@ class Vel_PDE_Loss(object):
         u_grad_u = grad_vel * combined_magnitude
 
 
-        grad_pressure = self.compute_gradient(pf, resolution)[1:]
+        grad_pressure = self.compute_gradient(pressure_field, resolution)[1:]
 
-        pres_const = self.compose_pressure(df)
+        pres_const = self.compose_pressure(dfun)
         reps = [1]*(len(pres_const.shape)+1)
         reps[0] = 2
         pres_const.unsqueeze(0).repeat(reps)
@@ -306,7 +306,7 @@ class Vel_PDE_Loss(object):
 
         pressure_term =  pres_const.cuda() * grad_pressure
 
-        visc_const = self.compose_viscosity(df)
+        visc_const = self.compose_viscosity(dfun)
         visc_const = self.trim_ends(visc_const, [-2, -1])
         visc_const = self.trim_start(visc_const, [-3])
         spatial_grad_scaled = visc_const.cuda()*grad_vel
