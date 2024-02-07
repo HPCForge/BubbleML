@@ -296,7 +296,10 @@ class Vel_PDE_Loss(object):
         u_grad_u = grad_vel * combined_magnitude
 
 
-        grad_pressure = self.compute_gradient(pressure_field, resolution)[1:]
+        grad_pressure_x = self.compute_derivative(pressure_field, resolution[-1], -1, 1).unsqueeze(0)
+        grad_pressure_y = self.compute_derivative(pressure_field, resolution[-2], -2, 1).unsqueeze(0)
+
+        grad_pressure = torch.cat([grad_pressure_y, grad_pressure_x], dim=0)
 
         pres_const = self.compose_pressure(dfun)
         reps = [1]*(len(pres_const.shape)+1)
