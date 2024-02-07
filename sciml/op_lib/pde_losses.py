@@ -255,8 +255,7 @@ class Vel_PDE_Loss(object):
         if direction == 1:
             field_derivative = torch.narrow(field_derivative, dim, 0, N[dim]-1)/resolution
         else:
-            pass
-            # field_derivative = torch.narrow(field_derivative, dim, 1, N[dim]-1)/resolution
+            field_derivative = torch.narrow(field_derivative, dim, 1, N[dim]-2)/resolution
     
         return field_derivative
     
