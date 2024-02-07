@@ -201,6 +201,8 @@ class Vel_PDE_Loss(object):
             else:
                 grad.append(self.trim_ends(self.compute_derivative(vel, res, -len(resolution)+i, 1), dim).unsqueeze(0))
     
+        for i in grad:
+            print(i.shape)
         grad = torch.cat(grad, dim = 0)
         
         return grad
