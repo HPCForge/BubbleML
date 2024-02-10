@@ -30,6 +30,9 @@ class BoilingDataset(Dataset):
             f.create_dataset('vely', data=self._data['vely'].permute(perm))
             f.create_dataset('dfun', data=self._data['dfun'].permute(perm))
             f.create_dataset('pressure', data=self._data['pres'].permute(perm))
+            f.create_dataset('massflux', data=self._data['mflx'].permute(perm))
+            f.create_dataset('normx', data=self._data['nrmx'].permute(perm))
+            f.create_dataset('normy', data=self._data['nrmy'].permute(perm))
             f.create_dataset('x', data=self._data['x'].permute(perm))
             f.create_dataset('y', data=self._data['y'].permute(perm))
             
