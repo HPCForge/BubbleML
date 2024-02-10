@@ -86,9 +86,9 @@ def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, ve
         y = np.arange(0,velmag_field.shape[0],1)
         X,Y = np.meshgrid(x,y)
 
-        velmag_field[np.flipud(dist_fields[..., i])<0] = 0
-        velx_field[np.flipud(dist_fields[..., i])>0] = 0
-        vely_field[np.flipud(dist_fields[..., i])>0] = 0
+        velmag_field[np.flipud(dist_fields[i, :, :])<0] = 0
+        velx_field[np.flipud(dist_fields[i, :, :])>0] = 0
+        vely_field[np.flipud(dist_fields[i, :, :])>0] = 0
 
         fig, ax = plt.subplots()
         im = ax.imshow(velmag_field, vmin=0, vmax=3, cmap='Purples')
