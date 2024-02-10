@@ -136,4 +136,4 @@ if __name__ == '__main__':
     normx_fields = simul_file['normx'][:]
     normy_fields = simul_file['normy'][:]
 
-    plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, op_dir=args.output_dir)
+    plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, mflux_fields, normx_fields, normy_fields, op_dir=args.output_dir)
