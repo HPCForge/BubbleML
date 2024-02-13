@@ -8,23 +8,26 @@ import numpy as np
 import cv2
 
 
-def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, op_dir):
+def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, mflux_fields, normx_fields, normy_fields, op_dir):
     """
     input: 3D array of variable frames (x, y, t)
     input: output directory
     Plots frames for each individual timestep
     """
-    timesteps = dist_fields.shape[2]
+    timesteps = dist_fields.shape[0]
     
     for i in range(timesteps):
         i_str = str(i).zfill(3)
         
-        dist_field = np.copy(np.flipud(dist_fields[..., i]))
-        temp_field = np.flipud(temp_fields[..., i])
-        pres_field = np.flipud(pres_fields[..., i])
-        velx_field = np.flipud(velx_fields[..., i])
-        vely_field = -1 * np.flipud(vely_fields[..., i])
-        velmag_field = np.flipud(velmag_fields[..., i])
+        dist_field = np.copy(np.flipud(dist_fields[i, :, :]))
+        temp_field = np.flipud(temp_fields[i, :, :])
+        pres_field = np.flipud(pres_fields[i, :, :])
+        velx_field = np.flipud(velx_fields[i, :, :])
+        vely_field = -1 * np.flipud(vely_fields[i, :, :])
+        velmag_field = np.flipud(velmag_fields[i, :, :])
+        mflux_field = np.flipud(mflux_fields[i, :, :])
+        normx_field = np.flipud(normx_fields[i, :, :])
+        normy_field = np.flipud(normy_fields[i, :, :])
         
         # Plot distance field
         dist_field[dist_field>0] *= (255/dist_field.max())
@@ -83,9 +86,9 @@ def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, ve
         y = np.arange(0,velmag_field.shape[0],1)
         X,Y = np.meshgrid(x,y)
 
-        velmag_field[np.flipud(dist_fields[..., i])<0] = 0
-        velx_field[np.flipud(dist_fields[..., i])>0] = 0
-        vely_field[np.flipud(dist_fields[..., i])>0] = 0
+        velmag_field[np.flipud(dist_fields[i, :, :])<0] = 0
+        velx_field[np.flipud(dist_fields[i, :, :])>0] = 0
+        vely_field[np.flipud(dist_fields[i, :, :])>0] = 0
 
         fig, ax = plt.subplots()
         im = ax.imshow(velmag_field, vmin=0, vmax=3, cmap='Purples')
@@ -96,6 +99,23 @@ def plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, ve
         fig.colorbar(im, fraction=0.04, pad=0.05, location='bottom')
         pathlib.Path(f'{op_dir}/vel').mkdir(parents=True, exist_ok=True)
         plt.savefig(f'{op_dir}/vel/{i_str}.png', bbox_inches='tight')
+        plt.close()
+
+        fig, ax = plt.subplots()
+        q = ax.quiver(X[::4,::4], Y[::4,::4], normx_field[::4,::4], normy_field[::4,::4], scale=30)
+        ax.imshow(overlay, alpha=1)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        pathlib.Path(f'{op_dir}/norm_vecs').mkdir(parents=True, exist_ok=True)
+        plt.savefig(f'{op_dir}/norm_vecs/{i_str}.png', bbox_inches='tight')
+        plt.close()
+        
+        fig, ax = plt.subplots()
+        im = ax.imshow(mflux_field, vmax=0.005, vmin=-0.005, cmap='bwr')
+        ax.set_aspect('equal')
+        fig.colorbar(im, fraction=0.04, pad=0.05)
+        pathlib.Path(f'{op_dir}/mflux').mkdir(parents=True, exist_ok=True)
+        plt.savefig(f'{op_dir}/mflux/{i_str}.png', bbox_inches='tight')
         plt.close()
 
 if __name__ == '__main__':
@@ -112,5 +132,8 @@ if __name__ == '__main__':
     velx_fields = simul_file['velx'][:]
     vely_fields = simul_file['vely'][:]
     velmag_fields = np.sqrt(velx_fields**2 + vely_fields**2)
+    mflux_fields = simul_file['massflux'][:]
+    normx_fields = simul_file['normx'][:]
+    normy_fields = simul_file['normy'][:]
 
-    plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, op_dir=args.output_dir)
+    plot_arr(dist_fields, temp_fields, pres_fields, velx_fields, vely_fields, velmag_fields, mflux_fields, normx_fields, normy_fields, op_dir=args.output_dir)
