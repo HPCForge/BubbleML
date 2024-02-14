@@ -16,6 +16,8 @@ import torch
 from .training.filtered_networks import LReLu, LReLu_regular #Either "filtered LReLU" or regular LReLu
 from .debug_tools import format_tensor_size
 
+from neuralop.layers.resample import resample
+
 #------------------------------------------------------------------------------
 
 #Depending on in_size, out_size, the CNOBlock can be:
@@ -171,7 +173,8 @@ class ResidualBlock(nn.Module):
                  half_width_mult  = 0.8,
                  radial = False,
                  batch_norm = True,
-                 activation = 'cno_lrelu'
+                 activation = 'cno_lrelu',
+                 total_upsampling = 1
                  ):
         super(ResidualBlock, self).__init__()
 
@@ -179,6 +182,7 @@ class ResidualBlock(nn.Module):
         self.size  = size
         self.conv_kernel = conv_kernel
         self.batch_norm = batch_norm
+        self.total_upsampling = total_upsampling
 
         #---------- Filter properties -----------
         self.citically_sampled = False #We use w_c = s/2.0001 --> NOT critically sampled
@@ -207,11 +211,11 @@ class ResidualBlock(nn.Module):
             self.activation  = LReLu(in_channels           = self.channels, #In _channels is not used in these settings
                                      out_channels          = self.channels,                   
                                      in_size               = self.size,                       
-                                     out_size              = self.size,                       
+                                     out_size              = self.size*total_upsampling,                       
                                      in_sampling_rate      = self.size,               
-                                     out_sampling_rate     = self.size,             
+                                     out_sampling_rate     = self.size*total_upsampling,             
                                      in_cutoff             = self.cutoff,                     
-                                     out_cutoff            = self.cutoff,                  
+                                     out_cutoff            = self.cutoff*total_upsampling,                  
                                      in_half_width         = self.halfwidth,                
                                      out_half_width        = self.halfwidth,              
                                      filter_size           = filter_size,       
@@ -238,8 +242,10 @@ class ResidualBlock(nn.Module):
         out = self.convolution2(out)
         if self.batch_norm:
             out = self.batch_norm2(out)
-        
-        return x + out
+        if self.total_upsampling is not 1:
+            return resample(x, 2, [-2, -1]) + out
+        else:
+            return x + out
 #------------------------------------------------------------------------------
 
 #CNO NETWORK:
@@ -263,13 +269,14 @@ class CNO(nn.Module):
                  expand_input = False,      # Start with original in_size, or expand it (pad zeros in the spectrum)
                  latent_lift_proj_dim = 64, # Intermediate latent dimension in the lifting/projection layer
                  add_inv = True,            # Add invariant block (I) after the intermediate connections?
-                 activation = 'cno_lrelu'   # Activation function can be 'cno_lrelu' or 'lrelu'
+                 activation = 'cno_lrelu',   # Activation function can be 'cno_lrelu' or 'lrelu'
+                 upscale_factor = 1
                 ):
         
         super(CNO, self).__init__()
 
         ###################### Define the parameters & specifications #################################################
-
+        self.upscale_factor = upscale_factor
         
         # Number od (D) & (U) Blocks
         self.N_layers = int(N_layers)
@@ -429,6 +436,18 @@ class CNO(nn.Module):
                                                         activation = activation))                                  
                                                for i in range(self.N_layers + 1)])
         
+        if self.upscale_factor is not 1:
+            self.upscale_block = ResidualBlock(channels = self.inv_features[-1],
+                                               size     = self.decoder_sizes[-1],
+                                               cutoff_den = cutoff_den,
+                                               conv_kernel = conv_kernel,
+                                               filter_size = filter_size,
+                                               lrelu_upsampling = lrelu_upsampling,
+                                               half_width_mult  = half_width_mult,
+                                               radial = radial,
+                                               batch_norm = batch_norm,
+                                               activation = activation,
+                                               total_upsampling = upscale_factor)
         
         ####################### Define ResNets Blocks ################################################################
 
@@ -510,6 +529,8 @@ class CNO(nn.Module):
         # Cat & Execute Projetion ---------------------------------------------
         
         x = torch.cat((x, self.ED_expansion[0](skip[0])),1)
+        if self.upscale_factor is not 1:
+            x = self.upscale_block(x)
         x = self.project(x)
         
         del skip

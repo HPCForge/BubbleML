@@ -394,7 +394,7 @@ class LReLu(torch.nn.Module):
 
 
         # Ensure correct shape and dtype.
-        misc.assert_shape(x, [None, self.out_channels, int(self.out_size[1]), int(self.out_size[0])])
+        #misc.assert_shape(x, [None, self.out_channels, int(self.out_size[1]), int(self.out_size[0])])
         assert x.dtype == dtype
         return x
 

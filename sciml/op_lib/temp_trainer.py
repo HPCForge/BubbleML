@@ -86,7 +86,7 @@ class TempTrainer:
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
             coords, temp, vel, label = downsample_domain(self.cfg.train.downsample_factor, coords, temp, vel, label)
-
+            print("temp shape: ", temp.shape, "coords shape: ", coords.shape, "vel shape: ", vel.shape)
             pred = self.push_forward_trick(coords, temp, vel)
 
             print(pred.size(), label.size())

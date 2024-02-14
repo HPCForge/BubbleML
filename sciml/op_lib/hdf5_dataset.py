@@ -194,6 +194,40 @@ class TempInputDataset(HDF5Dataset):
         base_time = timestep + self.time_window
         self._data['temp'][base_time:base_time + self.future_window] = temp
 
+class TempUpscaleInputDataset(HDF5Dataset):
+    r""" 
+    This is a dataset for predicting only temperature. It assumes that
+    velocities are known in every timestep. It also enables writing
+    past predictions for temperature and using them to make future
+    predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        coords_dim = 2 if use_coords else 0
+        self.in_channels = 3 * self.time_window + coords_dim + 2 * self.future_window
+        self.out_channels = self.future_window
+
+    def __getitem__(self, timestep):
+        coords = self._get_coords(timestep)[:, ::2, ::2]
+        temps = torch.stack([self._get_temp(timestep + k) for k in range(self.time_window)], dim=0)[:, ::2, ::2]
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window + self.future_window)], dim=0)[:, ::2, ::2]
+        base_time = timestep + self.time_window 
+        label = torch.stack([self._get_temp(base_time + k) for k in range(self.future_window)], dim=0)
+        return (coords, *self._transform(temps, vel, label))
+
+    def write_temp(self, temp, timestep):
+        if temp.dim() == 2:
+            temp.unsqueeze_(-1)
+        base_time = timestep + self.time_window
+        self._data['temp'][base_time:base_time + self.future_window] = temp
+
 class TempPDEInputDataset(HDF5Dataset):
     r""" 
     This is a dataset for predicting only temperature specifically for

@@ -124,7 +124,8 @@ def get_model(model_name,
         model = CNO(in_dim = in_channels, 
                     in_size = exp.model.in_size, 
                     N_layers = exp.model.n_layers,
-                    out_dim = exp.train.future_window)
+                    out_dim = exp.train.future_window,
+                    upscale_factor= exp.model.upscale_factor)
 
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])

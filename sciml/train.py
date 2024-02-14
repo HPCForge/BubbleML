@@ -20,12 +20,14 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from op_lib.disk_hdf5_dataset import (
         DiskTempInputDataset,
         DiskTempPDEInputDataset,
+        DiskTempUpscaleInputDataset,
         DiskTempVelDataset
 )
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
         TempPDEInputDataset,
+        TempUpscaleInputDataset,
         TempVelDataset
 )
 
@@ -42,11 +44,13 @@ from models.get_model import get_model
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
     'temp_input_dataset_PDE': (DiskTempPDEInputDataset, TempPDEInputDataset),
+    'temp_upscale_input_dataset': (DiskTempUpscaleInputDataset, TempUpscaleInputDataset),
     'vel_dataset': (DiskTempVelDataset, TempVelDataset)
 }
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
+    'temp_upscale_input_dataset': TempTrainer,
     'temp_input_dataset_PDE': TempTrainerPDE,
     'vel_dataset': PushVelTrainer
 }
