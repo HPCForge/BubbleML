@@ -14,7 +14,7 @@ class BoilingDataset(Dataset):
         super().__init__()
         filenames = sorted(glob.glob(directory + '/*'))
         self._filenames = [f for f in filenames if 'plt_cnt' in f][:-1]
-        self.heater = h5py.File([f for f in filenames if 'htr' in f][0], 'r')
+        self.heater = [f for f in filenames if 'htr' in f][0]
         
         with h5py.File(self._filenames[0]) as f:
             print(f.keys())
@@ -48,7 +48,8 @@ class BoilingDataset(Dataset):
                 int_runtime_params = plot_0['integer runtime parameters'][:]
                 attributes['real-runtime-params'] = {real_runtime_params[i][0].decode('utf-8').strip(): real_runtime_params[i][1] for i in range(real_runtime_params.shape[0])}
                 attributes['int-runtime-params'] = {int_runtime_params[i][0].decode('utf-8').strip(): int_runtime_params[i][1] for i in range(int_runtime_params.shape[0])}
-                attributes['heater'] = {k: self.heater['heater'][k][...] for k in self.heater['heater'].keys()}
+                heater = h5py.File(self.heater, 'r')
+                attributes['heater'] = {k: heater['heater'][k][...] for k in heater['heater'].keys()}
                 attributes['heater']['nucSeedRadius'] = self.heater['init']['radii'][...][0]
                 f.attrs.update(attributes)
 
@@ -101,7 +102,7 @@ class BoilingDataset(Dataset):
 
         var_dict['x'] = np.empty((nyb, nxb))
         var_dict['y'] = np.empty((nyb, nxb))
-        block_idx = 0
+
         for block in blocks:
             x, y = np.meshgrid(block.xrange('center'),
                                block.yrange('center'))
@@ -111,12 +112,13 @@ class BoilingDataset(Dataset):
             var_dict['y'][r:r+y_bs,c:c+x_bs] = y
 
         coordx, coordy = var_dict['x'][0], np.transpose(var_dict['y'])[0]
-        heater_sites = list(zip(self.heater['site']['x'][...], self.heater['site']['y'][...]))
+        heater = h5py.File(self.heater, 'r')
+        heater_sites = list(zip(heater['site']['x'][...], self.heater['site']['y'][...]))
         var_dict['heater_sites'] = heater_sites
         var_dict['site_dfun'] = np.zeros_like(heater_sites)
         var_dict['vapor_iters'] = np.zeros_like(heater_sites, dtype=np.int8)
 
-        seed_height = self.heater['init']['radii'][...][0] * np.cos(self.heater['heater']['rcdAngle'][...][0] * (np.pi/180))
+        seed_height = heater['init']['radii'][...][0] * np.cos(heater['heater']['rcdAngle'][...][0] * (np.pi/180))
         for i, htr_points_xy in enumerate(heater_sites):
             seed_x = htr_points_xy[0]
             seed_y = htr_points_xy[1] + seed_height
