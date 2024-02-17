@@ -7,12 +7,15 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import h5py
 from joblib import Parallel, delayed
+import sys
 
 class BoilingDataset(Dataset):
     def __init__(self, directory):
         super().__init__()
         filenames = sorted(glob.glob(directory + '/*'))
         self._filenames = [f for f in filenames if 'plt_cnt' in f][:-1]
+        self.heater = h5py.File([f for f in filenames if 'htr' in f][0], 'r')
+        
         with h5py.File(self._filenames[0]) as f:
             print(f.keys())
         if len(self._filenames) > 0:
@@ -35,14 +38,20 @@ class BoilingDataset(Dataset):
             f.create_dataset('normy', data=self._data['nrmy'].permute(perm))
             f.create_dataset('x', data=self._data['x'].permute(perm))
             f.create_dataset('y', data=self._data['y'].permute(perm))
+            f.create_dataset('heater_sites', data=self._data['heater_sites'].permute(1,0))
+            f.create_dataset('site_dfun', data=self._data['site_dfun'].permute(1,0))
+            f.create_dataset('vapor_iters', data=self._data['vapor_iters'].permute(1,0))
             
-            REAL_RUNTIME_PARAMS = 'real runtime parameters'
-            INT_RUNTIME_PARAMS = 'integer runtime parameters'
+            attributes = {}
+            with h5py.File(self._filenames[0], 'r') as plot_0:
+                real_runtime_params = plot_0['real runtime parameters'][:]
+                int_runtime_params = plot_0['integer runtime parameters'][:]
+                attributes['real-runtime-params'] = {real_runtime_params[i][0].decode('utf-8').strip(): real_runtime_params[i][1] for i in range(real_runtime_params.shape[0])}
+                attributes['int-runtime-params'] = {int_runtime_params[i][0].decode('utf-8').strip(): int_runtime_params[i][1] for i in range(int_runtime_params.shape[0])}
+                attributes['heater'] = {k: self.heater['heater'][k][...] for k in self.heater['heater'].keys()}
+                attributes['heater']['nucSeedRadius'] = self.heater['init']['radii'][...][0]
+                f.attrs.update(attributes)
 
-            if REAL_RUNTIME_PARAMS in f.keys():
-                f.create_dataset('real-runtime-params', data=f[REAL_RUNTIME_PARAMS][:])
-            if INT_RUNTIME_PARAMS in f.keys():
-                f.create_dataset('int-runtime-params', data=f[INT_RUNTIME_PARAMS][:])
 
     def _load_data(self):
         frame_dicts = self._load_files_par()
@@ -58,10 +67,6 @@ class BoilingDataset(Dataset):
         for var in var_list:
             var_dict[var] = torch.stack(var_dict[var], -1)
         return var_dict
-
-    def _runtime_params(self, f, key):
-        with h5py.File(self._filenames[0], 'r') as f:
-            return f[key][:]
 
     def _load_dims(self):
         frame0 = boxkit.read_dataset(self._filenames[0], source='flash')
@@ -104,6 +109,25 @@ class BoilingDataset(Dataset):
             c = x_bs * round(int((nxb * (block.xmin - frame.xmin))/(frame.xmax - frame.xmin))/x_bs)
             var_dict['x'][r:r+y_bs,c:c+x_bs] = x 
             var_dict['y'][r:r+y_bs,c:c+x_bs] = y
+
+        coordx, coordy = var_dict['x'][0], np.transpose(var_dict['y'])[0]
+        heater_sites = list(zip(self.heater['site']['x'][...], self.heater['site']['y'][...]))
+        var_dict['heater_sites'] = heater_sites
+        var_dict['site_dfun'] = np.zeros_like(heater_sites)
+        var_dict['vapor_iters'] = np.zeros_like(heater_sites, dtype=np.int8)
+
+        seed_height = self.heater['init']['radii'][...][0] * np.cos(self.heater['heater']['rcdAngle'][...][0] * (np.pi/180))
+        for i, htr_points_xy in enumerate(heater_sites):
+            seed_x = htr_points_xy[0]
+            seed_y = htr_points_xy[1] + seed_height
+
+            x_i = np.searchsorted(coordx, seed_x, side='left')
+            y_i = np.searchsorted(coordy, seed_y, side='left')
+            var_dict['site_dfun'][i] = (var_dict['dfun'][y_i, x_i] + var_dict['dfun'][y_i-1, x_i] + var_dict['dfun'][y_i, x_i-1] + var_dict['dfun'][y_i-1, x_i-1])/4.0
+            if var_dict['site_dfun'][i] > 0:
+                var_dict['vapor_iters'][i] += 1
+            else:    
+                var_dict['vapor_iters'][i] = 0
 
         return var_dict
 

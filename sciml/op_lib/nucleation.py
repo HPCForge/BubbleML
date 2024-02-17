@@ -75,10 +75,10 @@ def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, curr_i
     for i, htr_points_xy in enumerate(zip(x_sites, y_sites)):
         seed_x = htr_points_xy[0]
         seed_y = htr_points_xy[1] + seed_height
-        x_i = np.searchsorted(coordx, seed_x)
-        y_i = np.searchsorted(coordy, seed_y)
+        x_i = np.searchsorted(coordx, seed_x, side='left')
+        y_i = np.searchsorted(coordy, seed_y, side='left')
 
-        dfun_site = (dfun[y_i, x_i] + dfun[y_i+1, x_i] + dfun[y_i, x_i+1] + dfun[y_i+1, x_i+1])/4.0  # Average of the 4 cells surrounding the nucleation site
+        dfun_site = (dfun[y_i, x_i] + dfun[y_i-1, x_i] + dfun[y_i, x_i-1] + dfun[y_i-1, x_i-1])/4.0  # Average of the 4 cells surrounding the nucleation site
 
         if dfun_site < 0 and curr_iter % nuc_plot_interval == 0:
             tagged_sites[i] = True
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     init_nucl_coordx, init_nucl_coordy = heater_init(-5.0, 5.0, 40) # Coordinates of 40 nucleation sites
 
-    my_dfun = dfun_init(x_0, y_0, init_nucl_coordx, init_nucl_coordy, seed_radius=0.1) # Initialize the distance function with nucleated bubbles at t-0
+    my_dfun = dfun_init(x_0, y_0, init_nucl_coordx, init_nucl_coordy, seed_radius=0.2) # Initialize the distance function with nucleated bubbles at t-0
     
     # Plot the initial distance function for testing
     my_dfun[my_dfun>0] *= (255/my_dfun.max())
@@ -133,8 +133,8 @@ if __name__ == '__main__':
     dfun_40 = sim['dfun'][...][40]
 
     # Renucleation algorithm
-    tagged_nucl_sites = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_40, coordx, coordy, seed_radius=0.1, curr_iter=40, nuc_wait_time=0.4) 
-    dfun_40 = renucleate(x_0, y_0, init_nucl_coordx, init_nucl_coordy, tagged_nucl_sites, dfun_40, seed_radius=0.1) 
+    tagged_nucl_sites = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_40, coordx, coordy, seed_radius=0.2, curr_iter=40, nuc_wait_time=0.4) 
+    dfun_40 = renucleate(x_0, y_0, init_nucl_coordx, init_nucl_coordy, tagged_nucl_sites, dfun_40, seed_radius=0.2) 
 
     # Plot the distance function at t=40 after renucleation for testing 
     dfun_40[dfun_40>0] *= (255/dfun_40.max())
