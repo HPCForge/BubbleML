@@ -51,6 +51,8 @@ class BoilingDataset(Dataset):
                 heater = h5py.File(self.heater, 'r')
                 attributes['heater'] = {k: heater['heater'][k][...] for k in heater['heater'].keys()}
                 attributes['heater']['nucSeedRadius'] = heater['init']['radii'][...][0]
+                attributes['heater']['xSites'] = heater['site']['x'][...]
+                attributes['heater']['ySites'] = heater['site']['y'][...]
                 f.attrs.update(attributes)
 
 
@@ -114,7 +116,6 @@ class BoilingDataset(Dataset):
         coordx, coordy = var_dict['x'][0], np.transpose(var_dict['y'])[0]
         heater = h5py.File(self.heater, 'r')
         heater_sites = list(zip(heater['site']['x'][...], heater['site']['y'][...]))
-        var_dict['heater_sites'] = heater_sites
         var_dict['site_dfun'] = np.zeros(len(heater_sites))
         var_dict['vapor_iters'] = np.zeros(len(heater_sites), dtype=np.int8)
 
