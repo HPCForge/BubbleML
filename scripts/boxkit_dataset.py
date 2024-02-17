@@ -15,7 +15,7 @@ class BoilingDataset(Dataset):
         filenames = sorted(glob.glob(directory + '/*'))
         self._filenames = [f for f in filenames if 'plt_cnt' in f][:-1]
         self.heater = [f for f in filenames if 'htr' in f][0]
-        
+
         with h5py.File(self._filenames[0]) as f:
             print(f.keys())
         if len(self._filenames) > 0:
@@ -45,22 +45,19 @@ class BoilingDataset(Dataset):
             f.create_dataset('normy', data=self._data['nrmy'].permute(perm))
             f.create_dataset('x', data=self._data['x'].permute(perm))
             f.create_dataset('y', data=self._data['y'].permute(perm))
-            f.create_dataset('x_sites', data=self._data['x_sites'])
-            f.create_dataset('y_sites', data=self._data['y_sites'])
-            f.create_dataset('site_dfun', data=self._data['site_dfun'].permute(1,0))
-            f.create_dataset('liquid_iters', data=self._data['liquid_iters'].permute(1,0))
-            
-            attributes = {}
+            f.create_dataset('site-dfun', data=self._data['site_dfun'].permute(1,0))
+            f.create_dataset('liquid-iters', data=self._data['liquid_iters'].permute(1,0))
+
+
             with h5py.File(self._filenames[0], 'r') as plot_0:
-                real_runtime_params = plot_0['real runtime parameters'][:]
-                int_runtime_params = plot_0['integer runtime parameters'][:]
-                attributes['real-runtime-params'] = {real_runtime_params[i][0].decode('utf-8').strip(): real_runtime_params[i][1] for i in range(real_runtime_params.shape[0])}
-                attributes['int-runtime-params'] = {int_runtime_params[i][0].decode('utf-8').strip(): int_runtime_params[i][1] for i in range(int_runtime_params.shape[0])}
-                heater = h5py.File(self.heater, 'r')
-                attributes['heater'] = {k: heater['heater'][k][...] for k in heater['heater'].keys()}
-                attributes['heater']['nucSeedRadius'] = heater['init']['radii'][...][0]
-                print(attributes)
-                f.attrs.update(attributes)
+                f.create_dataset('real-runtime-params', data=plot_0['real runtime parameters'][:])
+                f.create_dataset('int-runtime-params', data=plot_0['integer runtime parameters'][:])
+
+            with h5py.File(self.heater, 'r') as heater:
+                heater.copy('/heater', f, name='/heater')
+                heater.copy('/init/radii', f, name='/nuc-seed-radii')
+                heater.copy('/site/x', f, name='/sites-x')
+                heater.copy('site/y', f, name='/sites-y')
 
 
     def _load_data(self):
@@ -117,14 +114,12 @@ class BoilingDataset(Dataset):
                                block.yrange('center'))
             r = y_bs * round(int((nyb * (block.ymin - frame.ymin))/(frame.ymax - frame.ymin))/y_bs)
             c = x_bs * round(int((nxb * (block.xmin - frame.xmin))/(frame.xmax - frame.xmin))/x_bs)
-            var_dict['x'][r:r+y_bs,c:c+x_bs] = x 
+            var_dict['x'][r:r+y_bs,c:c+x_bs] = x
             var_dict['y'][r:r+y_bs,c:c+x_bs] = y
 
         coordx, coordy = var_dict['x'][0], np.transpose(var_dict['y'])[0]
         heater = h5py.File(self.heater, 'r')
         heater_sites = list(zip(heater['site']['x'][...], heater['site']['y'][...]))
-        var_dict['x_sites'] = heater['site']['x'][...]
-        var_dict['y_sites'] = heater['site']['y'][...]
         var_dict['site_dfun'] = np.zeros(len(heater_sites))
 
         seed_height = heater['init']['radii'][...][0] * np.cos(heater['heater']['rcdAngle'][...][0] * (np.pi/180))
@@ -138,7 +133,7 @@ class BoilingDataset(Dataset):
 
         return var_dict
 
-TWALL = 'Twall-'
+TWALL = 'test'
 
 def unblock_dataset(write_dir, read_dir):
     b = BoilingDataset(read_dir)
@@ -146,8 +141,8 @@ def unblock_dataset(write_dir, read_dir):
     filename = Path(read_dir).stem
     print(filename)
     assert TWALL in filename, f'eek {TWALL} not in filename'
-    wall_temp = int(filename[len(TWALL):])
-    print(wall_temp)
+    #wall_temp = int(filename[len(TWALL):])
+    #print(wall_temp)
 
     dir_name = read_dir[read_dir.find(TWALL):]
     b.to_hdf5(f'{target}/{dir_name}.hdf5')
@@ -160,9 +155,9 @@ if __name__ == '__main__':
 
     subdirs = [f for f in glob.glob(f'{base}/*') if TWALL in f]
     print(subdirs)
-    
+
     for idx, subdir in enumerate(subdirs):
         print(f'processing {subdir} {idx}/{len(subdirs)}')
         unblock_dataset(target, subdir)
-    
+
     print('done!')
