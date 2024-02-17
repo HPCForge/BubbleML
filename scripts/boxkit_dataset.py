@@ -94,14 +94,14 @@ class BoilingDataset(Dataset):
 
         var_dict = {}
         for key in frame.varlist:
-            var_dict[key] = np.empty((nyb, nxb))
+            var_dict[key] = np.zeros((nyb, nxb))
             for block in blocks:
                 r = y_bs * round(int((nyb * (block.ymin - frame.ymin))/(frame.ymax - frame.ymin))/y_bs)
                 c = x_bs * round(int((nxb * (block.xmin - frame.xmin))/(frame.xmax - frame.xmin))/x_bs)
                 var_dict[key][r:r+y_bs, c:c+x_bs] = block[key]
 
-        var_dict['x'] = np.empty((nyb, nxb))
-        var_dict['y'] = np.empty((nyb, nxb))
+        var_dict['x'] = np.zeros((nyb, nxb))
+        var_dict['y'] = np.zeros((nyb, nxb))
 
         for block in blocks:
             x, y = np.meshgrid(block.xrange('center'),
@@ -115,8 +115,8 @@ class BoilingDataset(Dataset):
         heater = h5py.File(self.heater, 'r')
         heater_sites = list(zip(heater['site']['x'][...], heater['site']['y'][...]))
         var_dict['heater_sites'] = heater_sites
-        var_dict['site_dfun'] = np.zeros_like(heater_sites)
-        var_dict['vapor_iters'] = np.zeros_like(heater_sites, dtype=np.int8)
+        var_dict['site_dfun'] = np.zeros(len(heater_sites))
+        var_dict['vapor_iters'] = np.zeros(len(heater_sites), dtype=np.int8)
 
         seed_height = heater['init']['radii'][...][0] * np.cos(heater['heater']['rcdAngle'][...][0] * (np.pi/180))
         for i, htr_points_xy in enumerate(heater_sites):
