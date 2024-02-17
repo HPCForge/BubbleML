@@ -38,9 +38,10 @@ class BoilingDataset(Dataset):
             f.create_dataset('normy', data=self._data['nrmy'].permute(perm))
             f.create_dataset('x', data=self._data['x'].permute(perm))
             f.create_dataset('y', data=self._data['y'].permute(perm))
-            f.create_dataset('heater_sites', data=self._data['heater_sites'].permute(1,0))
+            f.create_dataset('x_sites', data=self._data['x_sites'])
+            f.create_dataset('y_sites', data=self._data['y_sites'])
             f.create_dataset('site_dfun', data=self._data['site_dfun'].permute(1,0))
-            f.create_dataset('vapor_iters', data=self._data['vapor_iters'].permute(1,0))
+            f.create_dataset('liquid_iters', data=self._data['liquid_iters'].permute(1,0))
             
             attributes = {}
             with h5py.File(self._filenames[0], 'r') as plot_0:
@@ -51,8 +52,6 @@ class BoilingDataset(Dataset):
                 heater = h5py.File(self.heater, 'r')
                 attributes['heater'] = {k: heater['heater'][k][...] for k in heater['heater'].keys()}
                 attributes['heater']['nucSeedRadius'] = heater['init']['radii'][...][0]
-                attributes['heater']['xSites'] = heater['site']['x'][...]
-                attributes['heater']['ySites'] = heater['site']['y'][...]
                 f.attrs.update(attributes)
 
 
@@ -69,6 +68,14 @@ class BoilingDataset(Dataset):
                 var_dict[var].append(torch.from_numpy(frame[var]))
         for var in var_list:
             var_dict[var] = torch.stack(var_dict[var], -1)
+        var_list = list(var_list) + 'liquid_iters'
+        var_dict['liquid_iters'] = torch.zeros(var_dict['site_dfun'].shape)
+        for idx, row in enumerate(var_dict['site_dfun']):
+            for jdx, val in enumerate(row):
+                if val < 0:
+                    var_dict['liquid_iters'][idx, jdx] += 1
+                else:
+                    var_dict['liquid_iters'][idx, jdx] = 0
         return var_dict
 
     def _load_dims(self):
@@ -116,8 +123,9 @@ class BoilingDataset(Dataset):
         coordx, coordy = var_dict['x'][0], np.transpose(var_dict['y'])[0]
         heater = h5py.File(self.heater, 'r')
         heater_sites = list(zip(heater['site']['x'][...], heater['site']['y'][...]))
+        var_dict['x_sites'] = heater['site']['x'][...]
+        var_dict['y_sites'] = heater['site']['y'][...]
         var_dict['site_dfun'] = np.zeros(len(heater_sites))
-        var_dict['vapor_iters'] = np.zeros(len(heater_sites), dtype=np.int8)
 
         seed_height = heater['init']['radii'][...][0] * np.cos(heater['heater']['rcdAngle'][...][0] * (np.pi/180))
         for i, htr_points_xy in enumerate(heater_sites):
@@ -127,10 +135,6 @@ class BoilingDataset(Dataset):
             x_i = np.searchsorted(coordx, seed_x, side='left')
             y_i = np.searchsorted(coordy, seed_y, side='left')
             var_dict['site_dfun'][i] = (var_dict['dfun'][y_i, x_i] + var_dict['dfun'][y_i-1, x_i] + var_dict['dfun'][y_i, x_i-1] + var_dict['dfun'][y_i-1, x_i-1])/4.0
-            if var_dict['site_dfun'][i] > 0:
-                var_dict['vapor_iters'][i] += 1
-            else:    
-                var_dict['vapor_iters'][i] = 0
 
         return var_dict
 
