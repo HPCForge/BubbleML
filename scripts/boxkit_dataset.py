@@ -21,6 +21,13 @@ class BoilingDataset(Dataset):
         if len(self._filenames) > 0:
             self._data = self._load_data()
             self._load_dims()
+        self._data['liquid_iters'] = torch.zeros(self._data['site_dfun'].shape)
+        for idx, row in enumerate(self._data['site_dfun']):
+            for jdx, val in enumerate(row):
+                if val < 0:
+                    self._data['liquid_iters'][idx, jdx] += 1
+                else:
+                    self._data['liquid_iters'][idx, jdx] = 0
 
     def to_hdf5(self, filename):
         if len(self._filenames) == 0:
@@ -68,14 +75,6 @@ class BoilingDataset(Dataset):
                 var_dict[var].append(torch.from_numpy(frame[var]))
         for var in var_list:
             var_dict[var] = torch.stack(var_dict[var], -1)
-        var_list = list(var_list) + 'liquid_iters'
-        var_dict['liquid_iters'] = torch.zeros(var_dict['site_dfun'].shape)
-        for idx, row in enumerate(var_dict['site_dfun']):
-            for jdx, val in enumerate(row):
-                if val < 0:
-                    var_dict['liquid_iters'][idx, jdx] += 1
-                else:
-                    var_dict['liquid_iters'][idx, jdx] = 0
         return var_dict
 
     def _load_dims(self):
