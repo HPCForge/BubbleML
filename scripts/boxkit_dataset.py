@@ -25,7 +25,7 @@ class BoilingDataset(Dataset):
         for idx, row in enumerate(self._data['site_dfun']):
             for jdx, val in enumerate(row):
                 if val < 0:
-                    self._data['liquid_iters'][idx, jdx] += 1
+                    self._data['liquid_iters'][idx, jdx] = self._data['liquid_iters'][idx - 1, jdx] + 1
                 else:
                     self._data['liquid_iters'][idx, jdx] = 0
 
@@ -59,6 +59,7 @@ class BoilingDataset(Dataset):
                 heater = h5py.File(self.heater, 'r')
                 attributes['heater'] = {k: heater['heater'][k][...] for k in heater['heater'].keys()}
                 attributes['heater']['nucSeedRadius'] = heater['init']['radii'][...][0]
+                print(attributes)
                 f.attrs.update(attributes)
 
 
