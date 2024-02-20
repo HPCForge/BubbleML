@@ -22,6 +22,9 @@ class HDF5ConcatDataset(ConcatDataset):
 
     def absmax_temp(self):
         return max(d.absmax_temp() for d in self.datasets)
+    
+    def absmax_dfun(self):
+        return max(d.absmax_dfun() for d in self.datasets)
 
     def normalize_temp_(self, absmax_temp=None):
         if not absmax_temp:
@@ -36,6 +39,13 @@ class HDF5ConcatDataset(ConcatDataset):
         for d in self.datasets:
             d.normalize_vel_(absmax_vel)
         return absmax_vel
+    
+    def normalize_dfun_(self, absmax_dfun=None):
+        if not absmax_dfun:
+            absmax_dfun = self.absmax_dfun()
+        for d in self.datasets:
+            d.normalize_dfun_(absmax_dfun)
+        return absmax_dfun
 
     def datum_dim(self):
         return self.datasets[0].datum_dim()
@@ -98,6 +108,9 @@ class HDF5Dataset(Dataset):
 
     def absmax_vel(self):
         return max(self._data['velx'].abs().max(), self._data['vely'].abs().max())
+    
+    def absmax_dfun(self):
+        return self._data['dfun'].abs().max()
 
     def normalize_temp_(self, scale):
         self._data['temp'] = 2 * (self._data['temp'] / scale) - 1
@@ -107,6 +120,10 @@ class HDF5Dataset(Dataset):
         for v in ('velx', 'vely'):
             self._data[v] = self._data[v] / scale
         self.vel_scale = scale
+
+    def normalize_dfun_(self, scale):
+        self._data['dfun'] = self._data['dfun'] / scale
+        self.dfun_scale = scale
 
     def get_x(self):
         return self._data['x'][self.time_window:]
@@ -141,6 +158,10 @@ class HDF5Dataset(Dataset):
     def _get_dfun(self, timestep):
         vapor_mask = self._data['dfun'][timestep] > 0
         return vapor_mask.to(float) - 0.5
+    
+    def _get_dfun_norm(self, timestep):
+        dfun = torch.from_numpy(self._index_data('dfun', timestep))
+        return dfun / self.dfun_scale
 
     def __len__(self):
         # len is the number of timesteps. Each prediction
@@ -225,12 +246,71 @@ class TempVelDataset(HDF5Dataset):
         coords = self._get_coords(timestep)
         temp = torch.stack([self._get_temp(timestep + k) for k in range(self.time_window)], dim=0)
         vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0) 
-        dfun = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0)
+        dfun = torch.stack([self._get_dfun_norm(timestep + k) for k in range(self.time_window)], dim=0)
 
         base_time = timestep + self.time_window 
         temp_label = torch.stack([self._get_temp(base_time + k) for k in range(self.future_window)], dim=0)
         vel_label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
         return self._transform(coords, temp, vel, dfun, temp_label, vel_label)
+
+    def __getitem__(self, timestep):
+        r"""
+        Get the windows rooted at {timestep, timestep + self.future_window, ...}
+        For each variable, the windows are concatenated into one tensor.
+        """
+        args = list(zip(*[self._get_timestep(timestep + k * self.future_window) for k in range(self.push_forward_steps)]))
+        return tuple([torch.stack(arg, dim=0) for arg in args])
+
+    def write_vel(self, vel, timestep):
+        base_time = timestep + self.time_window
+        self._data['velx'][base_time:base_time + self.future_window] = vel[0::2]
+        self._data['vely'][base_time:base_time + self.future_window] = vel[1::2]
+
+    def write_temp(self, temp, timestep):
+        if temp.dim() == 2:
+            temp.unsqueeze_(-1)
+        base_time = timestep + self.time_window
+        self._data['temp'][base_time:base_time + self.future_window] = temp
+
+class FullSurrogateDataset(HDF5Dataset):
+    r"""
+    This is a dataset for predicting both temperature and velocity.
+    Velocities and temperatures are unknown. The model writes past
+    predictions to reuse for future predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        coords_dim = 2 if use_coords else 0
+        self.temp_channels = self.time_window
+        self.vel_channels = self.time_window * 2
+        self.dfun_channels = self.time_window
+
+        self.in_channels = coords_dim + self.temp_channels + self.vel_channels + self.dfun_channels
+        self.out_channels = 4 * self.future_window # 1 for dfun, 2 for velocity, 1 for temperature
+
+    def _get_timestep(self, timestep):
+        r"""
+        Get the window rooted at timestep.
+        This includes the {timestep - self.time_window, ..., timestep - 1} as input
+        and {timestep, ..., timestep + future_window - 1} as output
+        """
+        coords = self._get_coords(timestep)
+        temp = torch.stack([self._get_temp(timestep + k) for k in range(self.time_window)], dim=0)
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0) 
+        dfun = torch.stack([self._get_dfun_norm(timestep + k) for k in range(self.time_window)], dim=0)
+
+        base_time = timestep + self.time_window 
+        temp_label = torch.stack([self._get_temp(base_time + k) for k in range(self.future_window)], dim=0)
+        vel_label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
+        dfun_label = torch.stack([self._get_dfun_norm(timestep + k) for k in range(self.future_window)], dim=0)
+        return self._transform(coords, temp, vel, dfun, temp_label, vel_label, dfun_label)
 
     def __getitem__(self, timestep):
         r"""

@@ -18,6 +18,7 @@ from .plt_util import plt_temp, plt_iter_mae, plt_vel
 from .heatflux import heatflux
 from .dist_utils import local_rank, is_leader_process
 from .downsample import downsample_domain
+from .nucleation import heater_init, tag_renucleation, renucleate
 
 from torch.cuda import nvtx 
 
@@ -26,7 +27,7 @@ t_bulk_map = {
     'subcooled': 50
 }
 
-class PushVelTrainer:
+class SurrogateTrainer:
     def __init__(self,
                  model,
                  future_window,
@@ -46,6 +47,7 @@ class PushVelTrainer:
         self.val_variable = val_variable
         self.writer = writer
         self.cfg = cfg.experiment
+        self.data_cfg = cfg.dataset
         self.loss = LpLoss(d=2, reduce_dims=[0, 1])
 
         self.max_push_forward_steps = max_push_forward_steps
@@ -113,9 +115,10 @@ class PushVelTrainer:
         #vel_pred = last_vel_input + timesteps_interleave * d_vel
 
         temp_pred = pred[:, :self.future_window]
-        vel_pred = pred[:, self.future_window:]
+        vel_pred = pred[:, self.future_window:3*self.future_window]
+        dfun_pred = pred[:, 3*self.future_window:]
 
-        return temp_pred, vel_pred
+        return temp_pred, vel_pred, dfun_pred
 
     def _index_push(self, idx, coords, temp, vel, dfun):
         r"""
@@ -134,20 +137,19 @@ class PushVelTrainer:
                 downsample_domain(self.cfg.train.downsample_factor, coords_input, temp_input, vel_input, dfun_input)
         with torch.no_grad():
             for idx in range(push_forward_steps - 1):
-                temp_input, vel_input = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
-                dfun_input = self._index_dfun(idx + 1, dfun)
-                dfun_input = downsample_domain(self.cfg.train.downsample_factor, dfun_input)[0]
+                temp_input, vel_input, dfun_input = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
         if self.cfg.train.noise and push_forward_steps == 1:
             temp_input += torch.empty_like(temp_input).normal_(0, 0.01)
             vel_input += torch.empty_like(vel_input).normal_(0, 0.01)
-        temp_pred, vel_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
-        return temp_pred, vel_pred
+            dfun_input += torch.empty_like(dfun_input).normal_(0, 0.01)
+        temp_pred, vel_pred, dfun_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
+        return temp_pred, vel_pred, dfun_pred
 
     def train_step(self, epoch, max_epochs):
         self.model.train()
 
         # warmup before doing push forward trick
-        for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.train_dataloader):
+        for iter, (coords, temp, vel, dfun, temp_label, vel_label, dfun_label) in enumerate(self.train_dataloader):
             coords = coords.to(local_rank()).float()
             temp = temp.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
@@ -155,18 +157,20 @@ class PushVelTrainer:
 
             push_forward_steps = self.push_forward_prob(epoch, max_epochs)
             
-            temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps)
+            temp_pred, vel_pred, dfun_pred = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps)
 
             idx = (push_forward_steps - 1)
             temp_label = temp_label[:, idx].to(local_rank()).float()
             idx = (push_forward_steps - 1)
             vel_label = vel_label[:, idx].to(local_rank()).float()
+            dfun_label = dfun_label[:, idx].to(local_rank()).float()
 
-            temp_label, vel_label = downsample_domain(self.cfg.train.downsample_factor, temp_label, vel_label)
+            temp_label, vel_label, dfun_label = downsample_domain(self.cfg.train.downsample_factor, temp_label, vel_label, dfun_label)
 
             temp_loss = F.mse_loss(temp_pred, temp_label)
             vel_loss = F.mse_loss(vel_pred, vel_label)
-            loss = (temp_loss + vel_loss) / 2
+            dfun_loss = F.mse_loss(dfun_pred, dfun_label)
+            loss = (temp_loss + vel_loss + dfun_loss) / 3
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -176,11 +180,13 @@ class PushVelTrainer:
             global_iter = epoch * len(self.train_dataloader) + iter
             write_metrics(temp_pred, temp_label, global_iter, 'TrainTemp', self.writer)
             write_metrics(vel_pred, vel_label, global_iter, 'TrainVel', self.writer)
-            del temp, vel, temp_label, vel_label
+            write_metrics(dfun_pred, dfun_label, global_iter, 'TrainDfun', self.writer)
+            del temp, vel, dfun, temp_label, vel_label, dfun_label
 
     def val_step(self, epoch):
         self.model.eval()
-        for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.val_dataloader):
+        
+        for iter, (coords, temp, vel, dfun, temp_label, vel_label, dfun_label) in enumerate(self.val_dataloader):
             coords = coords.to(local_rank()).float()
             temp = temp.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
@@ -189,26 +195,35 @@ class PushVelTrainer:
             # val doesn't apply push-forward
             temp_label = temp_label[:, 0].to(local_rank()).float()
             vel_label = vel_label[:, 0].to(local_rank()).float()
+            dfun_label = dfun_label[:, 0].to(local_rank()).float()
 
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+                temp_pred, vel_pred, dfun_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
                 temp_loss = F.mse_loss(temp_pred, temp_label)
                 vel_loss = F.mse_loss(vel_pred, vel_label)
-                loss = (temp_loss + vel_loss) / 2
+                dfun_loss = F.mse_loss(dfun_pred, dfun_label)
+                loss = (temp_loss + vel_loss + dfun_loss) / 3
             print(f'val loss: {loss}')
             global_iter = epoch * len(self.val_dataloader) + iter
             write_metrics(temp_pred, temp_label, global_iter, 'ValTemp', self.writer)
             write_metrics(vel_pred, vel_label, global_iter, 'ValVel', self.writer)
+            write_metrics(dfun_pred, dfun_label, global_iter, 'ValDfun', self.writer)
             del temp, vel, temp_label, vel_label
 
-    def test(self, dataset, max_time_limit=200):
+    def test(self, dataset, dfun_max, max_time_limit=2000):
         self.model.eval()
         temps = []
         temps_labels = []
         vels = []
         vels_labels = []
+        dfuns = []
+        dfuns_labels = []
         time_limit = min(max_time_limit, len(dataset))
+        init_nucl_coordx, init_nucl_coordy = heater_init(self.data_cfg.heater_xmin, self.data_cfg.heater_xmax, self.data_cfg.nucleation_sites)
+        global liquid_cover_iters
+        liquid_cover_iters = np.zeros_like(init_nucl_coordx)
         for timestep in range(0, time_limit, self.future_window):
+            x_grid, y_grid = dataset._get_abs_coords(timestep)
             coords, temp, vel, dfun, temp_label, vel_label = dataset[timestep]
             coords = coords.to(local_rank()).float().unsqueeze(0)
             temp = temp.to(local_rank()).float().unsqueeze(0)
@@ -217,32 +232,41 @@ class PushVelTrainer:
             # val doesn't apply push-forward
             temp_label = temp_label[0].to(local_rank()).float()
             vel_label = vel_label[0].to(local_rank()).float()
+            dfun_label = dfun[0].to(local_rank()).float()
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+                temp_pred, vel_pred, dfun_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
                 temp_pred = temp_pred.squeeze(0)
                 vel_pred = vel_pred.squeeze(0)
+                dfun_pred = dfun_pred.squeeze(0)
+                dfun_sites, liquid_cover_iters = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_pred, x_grid[0], \
+                                                                  np.transpose(y_grid)[0], seed_radius=0.2, liquid_cover_iters=liquid_cover_iters)
+                dfun_pred = renucleate(x_grid, y_grid, init_nucl_coordx, init_nucl_coordy, dfun_sites, liquid_cover_iters, dfun_pred, dfun_scale = dfun_max, seed_radius=0.2)
                 dataset.write_temp(temp_pred, timestep)
                 dataset.write_vel(vel_pred, timestep)
+                dataset.write_dfun(dfun_pred, timestep)
                 temps.append(temp_pred.detach().cpu())
                 temps_labels.append(temp_label.detach().cpu())
                 vels.append(vel_pred.detach().cpu())
                 vels_labels.append(vel_label.detach().cpu())
+                dfuns.append(dfun_pred.detach().cpu())
+                dfuns_labels.append(dfun_label.detach().cpu())
 
         temps = torch.cat(temps, dim=0)
         temps_labels = torch.cat(temps_labels, dim=0)
         vels = torch.cat(vels, dim=0)
         vels_labels = torch.cat(vels_labels, dim=0)
         dfun = dataset.get_dfun()[:temps.size(0)]
+        dfuns = torch.cat(dfuns, dim=0)
+        dfuns_labels = torch.cat(dfuns_labels, dim=0)
 
         print(temps.size(), temps_labels.size(), dfun.size())
         print(vels.size(), vels_labels.size(), dfun.size())
+        print(dfuns.size(), dfuns_labels.size(), dfun.size())
 
         velx_preds = vels[0::2]
         velx_labels = vels_labels[0::2]
         vely_preds = vels[1::2]
         vely_labels = vels_labels[1::2]
-
-        print(temps.size(), temps_labels.size(), dfun.size())
 
         metrics = compute_metrics(temps, temps_labels, dfun)
         print('TEMP METRICS')
@@ -252,6 +276,9 @@ class PushVelTrainer:
         print(metrics)
         metrics = compute_metrics(vely_preds, vely_labels, dfun)
         print('VELY METRICS')
+        print(metrics)
+        metrics = compute_metrics(dfuns, dfuns_labels, dfun)
+        print('DFUN METRICS')
         print(metrics)
         
         #xgrid = dataset.get_x().permute((2, 0, 1))

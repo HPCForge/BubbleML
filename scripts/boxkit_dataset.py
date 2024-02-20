@@ -25,10 +25,10 @@ class BoilingDataset(Dataset):
         for idx, row in enumerate(self._data['site_dfun']):
             for jdx, val in enumerate(row):
                 if val < 0:
-                    self._data['liquid_iters'][idx, jdx] = self._data['liquid_iters'][idx - 1, jdx] + 1
+                    self._data['liquid_iters'][idx, jdx] = self._data['liquid_iters'][idx, jdx - 1] + 1
                 else:
                     self._data['liquid_iters'][idx, jdx] = 0
-
+    
     def to_hdf5(self, filename):
         if len(self._filenames) == 0:
             return
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     target = str(Path.home() / '/share/crsp/lab/ai4ts/share/BubbleML-2.0/PoolBoiling-Saturated-FC72-2D-0.1/')
     Path(target).mkdir(parents=True, exist_ok=True)
 
-    base = str(Path.home() / '/pub/sheikhh1/bubbleml/BubbleML-2.0/simulation/PoolBoiling-Saturated-FC72-2D/')
+    base = str(Path.home() / '/pub/sheikhh1/flashx-sims/BubbleML-2.0/simulation/PoolBoiling-Saturated-FC72-2D/')
 
     subdirs = [f for f in glob.glob(f'{base}/*') if TWALL in f]
     print(subdirs)

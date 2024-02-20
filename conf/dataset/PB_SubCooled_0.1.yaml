@@ -1,6 +1,6 @@
 name: subcooled
 transform: True
-steady_time: 300
+steady_time: 0
 train_paths:
         #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-79.hdf5
         #- ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-81.hdf5
@@ -18,3 +18,6 @@ train_paths:
   - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-110.hdf5
 val_paths:
   - ${data_base_dir}/SubCooled-FC72-2D_HDF5/Twall-103.hdf5
+nucleation_sites: 27
+heater_xmin: -2.5
+heater_xmax: 2.5

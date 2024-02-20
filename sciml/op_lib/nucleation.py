@@ -53,7 +53,7 @@ def dfun_init(x_grid, y_grid, x_sites, y_sites, seed_radius):
         dfun = np.maximum(dfun, interim_dfun)
     return dfun
 
-def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, curr_iter, nuc_wait_time=0.4):
+def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, liquid_cover_iters):
     r"""
     Tag the nucleation sites for renucleation after a certain time.
 
@@ -63,14 +63,13 @@ def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, curr_i
         dfun (numpy.ndarray): The distance function at the current time.
         coordx (numpy.ndarray): The x-coordinates of the first row of the grid.
         coordy (numpy.ndarray): The y-coordinates of the first column of the grid.
-        curr_iter (int): The current iteration of the model.
-        nuc_wait_time (float): The minimum time after which renucleation happens. Multiple of 0.1
+        liquid_cover_iters (numpy.ndarray): Number of iterations the site has remained covered by liquid.
 
     Returns:
-        numpy.ndarray: The tagged nucleation sites.
+        numpy.ndarray: The current dfun at the nucleation sites.
+        numpy.ndarray: The updated number of iterations the site has remained covered by liquid.
     """
-    tagged_sites = np.zeros_like(x_sites, dtype=bool)
-    nuc_plot_interval = nuc_wait_time * 10
+    dfun_sites = np.zeros_like(x_sites)
     seed_height = seed_radius * np.cos(np.pi/4)
     for i, htr_points_xy in enumerate(zip(x_sites, y_sites)):
         seed_x = htr_points_xy[0]
@@ -79,13 +78,16 @@ def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, curr_i
         y_i = np.searchsorted(coordy, seed_y, side='left')
 
         dfun_site = (dfun[y_i, x_i] + dfun[y_i-1, x_i] + dfun[y_i, x_i-1] + dfun[y_i-1, x_i-1])/4.0  # Average of the 4 cells surrounding the nucleation site
+        dfun_sites[i] = dfun_site
+        
+        if dfun_site < 0:
+            liquid_cover_iters[i] += 1 
+        else:
+            liquid_cover_iters[i] = 0
 
-        if dfun_site < 0 and curr_iter % nuc_plot_interval == 0:
-            tagged_sites[i] = True
-
-    return tagged_sites
+    return dfun_sites, liquid_cover_iters
     
-def renucleate(x_grid, y_grid, x_sites, y_sites, tagged_sites, curr_dfun, seed_radius):
+def renucleate(x_grid, y_grid, x_sites, y_sites, dfun_sites, liquid_cover_iters, curr_dfun, dfun_scale, seed_radius):
     r"""
     Renucleate the sites that are tagged for renucleation.
 
@@ -94,7 +96,10 @@ def renucleate(x_grid, y_grid, x_sites, y_sites, tagged_sites, curr_dfun, seed_r
         y_grid (numpy.ndarray): The y-coordinates of the grid.
         x_sites (numpy.ndarray): The x-coordinates of the nucleation sites.
         y_sites (numpy.ndarray): The y-coordinates of the nucleation sites.
+        dfun_sites (numpy.ndarray): The current dfun at the nucleation sites.
+        liquid_cover_iters (numpy.ndarray): Number of iterations the site has remained covered by liquid.
         curr_dfun (numpy.ndarray): The distance function at the current time.
+        dfun_scale (float): Scale to normalize the distance function.
         seed_radius (float): The radius of the nucleation site.
 
     Returns:
@@ -102,14 +107,16 @@ def renucleate(x_grid, y_grid, x_sites, y_sites, tagged_sites, curr_dfun, seed_r
     """
     seed_height = seed_radius * np.cos(np.pi/4)
     for i, htr_points_xy in enumerate(zip(x_sites, y_sites)):
-        if tagged_sites[i]:
+        if dfun_sites[i] < 0 and liquid_cover_iters[i] >= 4:
             seed_x = htr_points_xy[0]
             seed_y = htr_points_xy[1] + seed_height
 
             interim_dfun = seed_radius - np.sqrt((x_grid - seed_x)**2 + (y_grid - seed_y)**2)
+            interim_dfun = interim_dfun / dfun_scale
             curr_dfun = np.maximum(curr_dfun, interim_dfun)
+            liquid_cover_iters[i] = 0
     
-    return curr_dfun
+    return curr_dfun, liquid_cover_iters
 
 
 if __name__ == '__main__':
@@ -132,9 +139,11 @@ if __name__ == '__main__':
 
     dfun_40 = sim['dfun'][...][40]
 
+    liquid_cover_iters = np.zeros_like(init_nucl_coordx)
     # Renucleation algorithm
-    tagged_nucl_sites = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_40, coordx, coordy, seed_radius=0.2, curr_iter=40, nuc_wait_time=0.4) 
-    dfun_40 = renucleate(x_0, y_0, init_nucl_coordx, init_nucl_coordy, tagged_nucl_sites, dfun_40, seed_radius=0.2) 
+    dfun_sites, liquid_cover_iters = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_40, coordx, coordy, seed_radius=0.2, liquid_cover_iters=liquid_cover_iters)
+    print(dfun_sites, liquid_cover_iters)
+    dfun_40 = renucleate(x_0, y_0, init_nucl_coordx, init_nucl_coordy, dfun_sites, liquid_cover_iters, dfun_40, seed_radius=0.2) 
 
     # Plot the distance function at t=40 after renucleation for testing 
     dfun_40[dfun_40>0] *= (255/dfun_40.max())

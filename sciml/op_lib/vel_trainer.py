@@ -33,7 +33,7 @@ class VelTrainer:
         self.lr_scheduler = lr_scheduler
         self.val_variable = val_variable
         self.writer = writer
-        self.cfg = cfg
+        self.cfg = cfg.experiment
         self.loss = LpLoss(d=2)
 
     def save_checkpoint(self, dataset_name):
@@ -47,7 +47,7 @@ class VelTrainer:
         Path(ckpt_root).mkdir(parents=True, exist_ok=True)
         ckpt_path = f'{ckpt_root}/{ckpt_file}'
         print(f'saving model to {ckpt_path}')
-        if cfg.distributed:
+        if self.cfg.distributed:
             torch.save(self.model.module.state_dict(), f'{ckpt_path}')
         else:
             torch.save(self.model.state_dict(), f'{ckpt_path}')

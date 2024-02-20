@@ -45,7 +45,7 @@ class TempTrainer:
         self.lr_scheduler = lr_scheduler
         self.val_variable = val_variable
         self.writer = writer
-        self.cfg = cfg
+        self.cfg = cfg.experiment
         self.loss = LpLoss(d=2, reduce_dims=[0, 1])
 
         self.push_forward_steps = push_forward_steps

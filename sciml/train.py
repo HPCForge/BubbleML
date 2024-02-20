@@ -19,17 +19,20 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from op_lib.disk_hdf5_dataset import (
         DiskTempInputDataset,
-        DiskTempVelDataset
+        DiskTempVelDataset,
+        DiskFullSurrogateDataset
 )
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
-        TempVelDataset
+        TempVelDataset,
+        FullSurrogateDataset
 )
 
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib.full_surrogate import SurrogateTrainer
 from op_lib.schedule_utils import LinearWarmupLR
 from op_lib import dist_utils
 
@@ -38,12 +41,14 @@ from models.get_model import get_model
 
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
-    'vel_dataset': (DiskTempVelDataset, TempVelDataset)
+    'vel_dataset': (DiskTempVelDataset, TempVelDataset),
+    'temp_vel_pos_dataset': (DiskFullSurrogateDataset, FullSurrogateDataset)
 }
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
-    'vel_dataset': PushVelTrainer
+    'vel_dataset': PushVelTrainer,
+    'full_surrogate_dataset': SurrogateTrainer
 }
 
 def build_datasets(cfg):
@@ -57,7 +62,7 @@ def build_datasets(cfg):
     # normalize temperatures and velocities to [-1, 1]
     train_dataset = HDF5ConcatDataset([
         DatasetClass[0](p,
-                        steady_time=cfg.dataset.steady_time,
+                        steady_time=steady_time,
                         use_coords=use_coords,
                         transform=cfg.dataset.transform,
                         time_window=time_window,
@@ -65,6 +70,7 @@ def build_datasets(cfg):
                         push_forward_steps=push_forward_steps) for p in cfg.dataset.train_paths])
     train_max_temp = train_dataset.normalize_temp_()
     train_max_vel = train_dataset.normalize_vel_()
+    train_max_dfun = train_dataset.normalize_dfun_()
 
     # use same mapping as train dataset to normalize validation set
     val_dataset = HDF5ConcatDataset([
@@ -75,10 +81,11 @@ def build_datasets(cfg):
                         future_window=future_window) for p in cfg.dataset.val_paths])
     val_dataset.normalize_temp_(train_max_temp)
     val_dataset.normalize_vel_(train_max_vel)
+    val_dataset.normalize_dfun_(train_max_dfun)
 
     assert val_dataset.absmax_temp() <= 1.5
     assert val_dataset.absmax_vel() <= 1.5
-    return train_dataset, val_dataset, train_max_temp, train_max_vel
+    return train_dataset, val_dataset, train_max_temp, train_max_vel, train_max_dfun
 
 def build_dataloaders(train_dataset, val_dataset, cfg):
     if cfg.experiment.distributed:
@@ -136,7 +143,7 @@ def train_app(cfg):
     
     writer = SummaryWriter(log_dir=log_dir)
 
-    train_dataset, val_dataset, train_max_temp, train_max_vel = build_datasets(cfg)
+    train_dataset, val_dataset, train_max_temp, train_max_vel, train_max_dfun = build_datasets(cfg)
     train_dataloader, val_dataloader = build_dataloaders(train_dataset, val_dataset, cfg)
     print('train size: ', len(train_dataloader))
     #tail = cfg.dataset.val_paths[0].split('-')[-1]
@@ -202,7 +209,7 @@ def train_app(cfg):
                            lr_scheduler,
                            val_variable,
                            writer,
-                           exp)
+                           cfg)
     print(trainer)
 
     if cfg.train and not cfg.model_checkpoint:
@@ -230,6 +237,7 @@ def train_app(cfg):
             # used for normalization
             'train_data_max_temp': train_max_temp,
             'train_data_max_vel': train_max_vel,
+            'train_data_max_dfun': train_max_dfun,
             # can be used to restart the learning rate
             'epochs': exp.train.max_epochs,
             # info needed to reconstruct the model
@@ -244,7 +252,10 @@ def train_app(cfg):
         torch.save(save_dict, f'{ckpt_path}')
 
     if cfg.test and dist_utils.is_leader_process():
-        metrics = trainer.test(val_dataset.datasets[0])
+        if exp.torch_dataset_name == 'full_surrogate_dataset':
+            metrics = trainer.test(val_dataset.datasets[0], train_max_dfun=train_max_dfun, max_time_limit=2000)
+        else:
+            metrics = trainer.test(val_dataset.datasets[0])
         print(metrics)
 
 if __name__ == '__main__':
