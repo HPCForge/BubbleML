@@ -42,7 +42,7 @@ from models.get_model import get_model
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
     'vel_dataset': (DiskTempVelDataset, TempVelDataset),
-    'temp_vel_pos_dataset': (DiskFullSurrogateDataset, FullSurrogateDataset)
+    'full_surrogate_dataset': (DiskFullSurrogateDataset, FullSurrogateDataset)
 }
 
 trainer_map = {
@@ -229,7 +229,7 @@ def train_app(cfg):
         print(f'saving model to {ckpt_path}')
 
         if cfg.test and dist_utils.is_leader_process():
-            metrics = trainer.test(val_dataset.datasets[0])
+            metrics = trainer.test(val_dataset.datasets[0], train_max_dfun)
         
         save_dict = {
             'id': f'{cfg.dataset.name}_{model_name}_{exp.torch_dataset_name}',
@@ -253,7 +253,7 @@ def train_app(cfg):
 
     if cfg.test and dist_utils.is_leader_process():
         if exp.torch_dataset_name == 'full_surrogate_dataset':
-            metrics = trainer.test(val_dataset.datasets[0], train_max_dfun=train_max_dfun, max_time_limit=2000)
+            metrics = trainer.test(val_dataset.datasets[0], train_max_dfun, max_time_limit=2000)
         else:
             metrics = trainer.test(val_dataset.datasets[0])
         print(metrics)

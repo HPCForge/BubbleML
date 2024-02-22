@@ -2,6 +2,7 @@ import h5py as h5
 import numpy as np
 from scipy.stats import qmc
 import matplotlib.pyplot as plt
+import torch
 
 DX = 0.03125 # Grid spacing in FlashX simulations
 
@@ -76,7 +77,6 @@ def tag_renucleation(x_sites, y_sites, dfun, coordx, coordy, seed_radius, liquid
         seed_y = htr_points_xy[1] + seed_height
         x_i = np.searchsorted(coordx, seed_x, side='left')
         y_i = np.searchsorted(coordy, seed_y, side='left')
-
         dfun_site = (dfun[y_i, x_i] + dfun[y_i-1, x_i] + dfun[y_i, x_i-1] + dfun[y_i-1, x_i-1])/4.0  # Average of the 4 cells surrounding the nucleation site
         dfun_sites[i] = dfun_site
         
@@ -113,7 +113,14 @@ def renucleate(x_grid, y_grid, x_sites, y_sites, dfun_sites, liquid_cover_iters,
 
             interim_dfun = seed_radius - np.sqrt((x_grid - seed_x)**2 + (y_grid - seed_y)**2)
             interim_dfun = interim_dfun / dfun_scale
-            curr_dfun = np.maximum(curr_dfun, interim_dfun)
+            if type(interim_dfun) == np.ndarray:
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                interim_dfun_tensor = torch.from_numpy(interim_dfun).float().to(device)
+                curr_dfun = torch.maximum(curr_dfun, interim_dfun_tensor)
+            elif type(interim_dfun == torch.Tensor):
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                interim_dfun_tensor = interim_dfun.float().to(device)
+                curr_dfun = torch.maximum(curr_dfun, interim_dfun_tensor)
             liquid_cover_iters[i] = 0
     
     return curr_dfun, liquid_cover_iters

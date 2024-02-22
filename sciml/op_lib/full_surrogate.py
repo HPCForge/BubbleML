@@ -8,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
+import h5py
 import time
 from pathlib import Path
 
@@ -52,7 +53,7 @@ class SurrogateTrainer:
 
         self.max_push_forward_steps = max_push_forward_steps
         self.future_window = future_window
-        self.use_coords = cfg.train.use_coords
+        self.use_coords = cfg.experiment.train.use_coords
 
     def save_checkpoint(self, log_dir, dataset_name):
         timestamp = int(time.time())
@@ -91,7 +92,8 @@ class SurrogateTrainer:
             self.val_step(epoch)
             if is_leader_process():
                 val_dataset = self.val_dataloader.dataset.datasets[0]
-                self.test(val_dataset)
+                dfun_max = val_dataset.absmax_dfun()
+                self.test(val_dataset, dfun_max)
                 self.save_checkpoint(log_dir, dataset_name)
 
     def _forward_int(self, coords, temp, vel, dfun):
@@ -210,7 +212,7 @@ class SurrogateTrainer:
             write_metrics(dfun_pred, dfun_label, global_iter, 'ValDfun', self.writer)
             del temp, vel, temp_label, vel_label
 
-    def test(self, dataset, dfun_max, max_time_limit=2000):
+    def test(self, dataset, dfun_max, max_time_limit=20):
         self.model.eval()
         temps = []
         temps_labels = []
@@ -222,9 +224,11 @@ class SurrogateTrainer:
         init_nucl_coordx, init_nucl_coordy = heater_init(self.data_cfg.heater_xmin, self.data_cfg.heater_xmax, self.data_cfg.nucleation_sites)
         global liquid_cover_iters
         liquid_cover_iters = np.zeros_like(init_nucl_coordx)
+        with h5py.File(self.data_cfg.val_paths[0], 'r') as sim:
+            x_grid = sim['x'][0]
+            y_grid = sim['y'][0]
         for timestep in range(0, time_limit, self.future_window):
-            x_grid, y_grid = dataset._get_abs_coords(timestep)
-            coords, temp, vel, dfun, temp_label, vel_label = dataset[timestep]
+            coords, temp, vel, dfun, temp_label, vel_label, dfun_label = dataset[timestep]
             coords = coords.to(local_rank()).float().unsqueeze(0)
             temp = temp.to(local_rank()).float().unsqueeze(0)
             vel = vel.to(local_rank()).float().unsqueeze(0)
@@ -232,15 +236,17 @@ class SurrogateTrainer:
             # val doesn't apply push-forward
             temp_label = temp_label[0].to(local_rank()).float()
             vel_label = vel_label[0].to(local_rank()).float()
-            dfun_label = dfun[0].to(local_rank()).float()
+            dfun_label = dfun_label[0].to(local_rank()).float()
             with torch.no_grad():
                 temp_pred, vel_pred, dfun_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
                 temp_pred = temp_pred.squeeze(0)
                 vel_pred = vel_pred.squeeze(0)
                 dfun_pred = dfun_pred.squeeze(0)
-                dfun_sites, liquid_cover_iters = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_pred, x_grid[0], \
+                dfun_frame = dfun_pred.squeeze(0)
+                dfun_sites, liquid_cover_iters = tag_renucleation(init_nucl_coordx, init_nucl_coordy, dfun_frame, x_grid[0], \
                                                                   np.transpose(y_grid)[0], seed_radius=0.2, liquid_cover_iters=liquid_cover_iters)
-                dfun_pred = renucleate(x_grid, y_grid, init_nucl_coordx, init_nucl_coordy, dfun_sites, liquid_cover_iters, dfun_pred, dfun_scale = dfun_max, seed_radius=0.2)
+                dfun_frame, liquid_cover_iters = renucleate(x_grid, y_grid, init_nucl_coordx, init_nucl_coordy, dfun_sites, liquid_cover_iters, dfun_frame, dfun_scale = dfun_max, seed_radius=0.2)
+                dfun_pred = dfun_frame.unsqueeze(0)
                 dataset.write_temp(temp_pred, timestep)
                 dataset.write_vel(vel_pred, timestep)
                 dataset.write_dfun(dfun_pred, timestep)

@@ -154,13 +154,18 @@ class HDF5Dataset(Dataset):
             x, y
         ], dim=0)
         return coords
+    
+    def _get_abs_coords(self, timestep):
+        x = self._data['x'][timestep]
+        y = self._data['y'][timestep]
+        return x, y
 
     def _get_dfun(self, timestep):
         vapor_mask = self._data['dfun'][timestep] > 0
         return vapor_mask.to(float) - 0.5
     
     def _get_dfun_norm(self, timestep):
-        dfun = torch.from_numpy(self._index_data('dfun', timestep))
+        dfun = self._data['dfun'][timestep]
         return dfun / self.dfun_scale
 
     def __len__(self):
@@ -330,3 +335,9 @@ class FullSurrogateDataset(HDF5Dataset):
             temp.unsqueeze_(-1)
         base_time = timestep + self.time_window
         self._data['temp'][base_time:base_time + self.future_window] = temp
+    
+    def write_dfun(self, dfun, timestep):
+        if dfun.ndim == 2:
+            dfun.unsqueeze_(-1)
+        base_time = timestep + self.time_window
+        self._data['dfun'][base_time:base_time + self.future_window] = dfun
