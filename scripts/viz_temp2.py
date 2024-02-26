@@ -29,7 +29,7 @@ def load_vel_data(temp_path):
 def main():
     args = parse_args()
     
-    job_id = '25032868/'
+    job_id = '29066130/'
     pred, label = load_vel_data(f'test_im/temp/{job_id}')
     
     plt_temp(pred.temp, label.temp, args.path, 'model')
@@ -79,7 +79,7 @@ def plt_vel(pred, label, path, model_name):
         #ax[2, 0].imshow(np.flipud(label.vely[i]), vmin=y_vmin, vmax=y_vmax, cmap='jet')
         #ax[1, 0].imshow(np.flipud(label_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')
 
-        ax[0, 1].imshow(np.flipud(np.nan_to_num(pred.temp[i])), vmin=0, vmax=1, cmap=temp_cmap())
+        #ax[0, 1].imshow(np.flipud(np.nan_to_num(pred.temp[i])), vmin=0, vmax=1, cmap=temp_cmap())
         #ax[1, 1].imshow(np.flipud(pred.velx[i]), vmin=x_vmin, vmax=x_vmax, cmap='jet')
         #ax[2, 1].imshow(np.flipud(pred.vely[i]), vmin=y_vmin, vmax=x_vmax, cmap='jet')
         #ax[1, 1].imshow(np.flipud(pred_mag[i]), vmin=0, vmax=mag_vmax, cmap='jet')

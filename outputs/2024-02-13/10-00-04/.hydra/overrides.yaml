@@ -1,0 +1,4 @@
+- dataset=PB_SubCooled_0.1
+- experiment=paper/test/pb_vel
+- data_base_dir=/share/crsp/lab/ai4ts/share/simul_ts_0.1/PoolBoiling-SubCooled-FC72-2D-0.1
+- log_dir=./

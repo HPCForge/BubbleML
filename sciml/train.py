@@ -19,17 +19,23 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from op_lib.disk_hdf5_dataset import (
         DiskTempInputDataset,
-        DiskTempVelDataset
+        DiskTempVelDataset,
+        DiskVelInputDataset,
+        DiskVelCoordInputDataset
 )
 from op_lib.hdf5_dataset import (
         HDF5ConcatDataset,
         TempInputDataset,
-        TempVelDataset
+        TempVelDataset,
+        VelInputDataset,
+        VelCoordInputDataset
 )
 
 from op_lib.temp_trainer import TempTrainer
 from op_lib.vel_trainer import VelTrainer
 from op_lib.push_vel_trainer import PushVelTrainer
+from op_lib.vel_only_trainer import VelOnlyTrainer
+from op_lib.vel_coord_trainer import VelCoordTrainer
 from op_lib.schedule_utils import LinearWarmupLR
 from op_lib import dist_utils
 
@@ -38,12 +44,16 @@ from models.get_model import get_model
 
 torch_dataset_map = {
     'temp_input_dataset': (DiskTempInputDataset, TempInputDataset),
-    'vel_dataset': (DiskTempVelDataset, TempVelDataset)
+    'vel_dataset': (DiskTempVelDataset, TempVelDataset),
+    'vel_only_dataset' : (DiskVelInputDataset,VelInputDataset),
+    'vel_coord_dataset' : (DiskVelCoordInputDataset,VelCoordInputDataset)
 }
 
 trainer_map = {
     'temp_input_dataset': TempTrainer,
-    'vel_dataset': PushVelTrainer
+    'vel_dataset': PushVelTrainer, 
+    'vel_only_dataset': VelOnlyTrainer,
+    'vel_coord_dataset' : VelCoordTrainer
 }
 
 def build_datasets(cfg):
@@ -97,6 +107,17 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                   num_workers=4,
                                   pin_memory=True,
                                   prefetch_factor=2)
+    # Iterate over the DataLoader
+    #for i, batch in enumerate(train_dataloader):
+        # Unpack the batch
+        # Adjust the unpacking based on how your data is returned by `__getitem__`
+        # For example, if `__getitem__` returns (vel, dfun, label), unpack accordingly
+        #vel, dfun, label = batch
+    
+        # Print the shapes of vel and dfun
+        #print(f"Batch {i}:")
+        #print(f"Shape of vel: {vel.shape}")
+        #print(f"Shape of dfun: {dfun.shape}")
     val_dataloader = DataLoader(val_dataset, 
                                 sampler=val_sampler,
                                 batch_size=cfg.experiment.train.batch_size,
@@ -149,6 +170,9 @@ def train_app(cfg):
     model_name = exp.model.model_name.lower()
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
+    #print(in_channels) 
+    #print(out_channels) 
+    
 
     # domain_rows and domain_cols are used to determine the number of modes
     # used in fourier models.

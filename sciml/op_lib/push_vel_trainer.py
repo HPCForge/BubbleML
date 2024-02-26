@@ -94,6 +94,10 @@ class PushVelTrainer:
 
     def _forward_int(self, coords, temp, vel, dfun):
         # TODO: account for possibly different timestep sizes of training data
+        # Print the shapes of the tensors
+    
+        # Optional: Print the actual data (if the tensors are not too large)
+
         input = torch.cat((temp, vel, dfun), dim=1)
         if self.use_coords:
             input = torch.cat((coords, input), dim=1)
@@ -120,6 +124,7 @@ class PushVelTrainer:
     def _index_push(self, idx, coords, temp, vel, dfun):
         r"""
         select the channels for push_forward_step `idx`
+        
         """
         return (coords[:, idx], temp[:, idx], vel[:, idx], dfun[:, idx])
 
@@ -129,6 +134,7 @@ class PushVelTrainer:
     def push_forward_trick(self, coords, temp, vel, dfun, push_forward_steps):
         # TODO: clean this up...
         coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
+        #print("The size of temp input is", temp_input.size(1))
         assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
         coords_input, temp_input, vel_input, dfun_input = \
                 downsample_domain(self.cfg.train.downsample_factor, coords_input, temp_input, vel_input, dfun_input)

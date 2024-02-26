@@ -35,7 +35,7 @@ def load_vel_data(temp_path, vel_path):
 def main():
     args = parse_args()
     
-    job_id = '25042240/'
+    job_id = '29119239/'
     pred, label = load_vel_data(f'test_im/temp/{job_id}', f'test_im/vel/{job_id}')
     
     plt_vel(pred, label, args.path, 'model')

@@ -1,0 +1,45 @@
+data_base_dir: /share/crsp/lab/ai4ts/share/simul_ts_0.1
+log_dir: /pub/junchc2/BubbleML
+train: true
+test: true
+model_checkpoint: null
+dataset:
+  name: subcooled
+  transform: true
+  steady_time: 300
+  train_paths:
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-90.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-92.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-95.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-97.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-98.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-100.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-102.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-106.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-108.hdf5
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-110.hdf5
+  val_paths:
+  - ${data_base_dir}/PoolBoiling-SubCooled-FC72-2D-0.1/Twall-103.hdf5
+experiment:
+  torch_dataset_name: vel_coord_dataset
+  distributed: false
+  train:
+    max_epochs: 250
+    batch_size: 4
+    shuffle_data: true
+    time_window: 5
+    future_window: 5
+    push_forward_steps: 1
+    use_coords: true
+    noise: true
+    downsample_factor: 1
+  model:
+    model_name: unet_arena
+    hidden_channels: 32
+  optimizer:
+    initial_lr: 0.001
+    weight_decay: 0.01
+  lr_scheduler:
+    name: step
+    factor: 0.5
+    patience: 75

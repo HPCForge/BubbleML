@@ -62,6 +62,13 @@ class TempTrainer:
             self.test(val_dataset)
 
     def _forward_int(self, coords, temp, vel):
+        print("Shape of vel:", vel.shape)
+        print("Shape of temp:", temp.shape)
+    
+        # Optional: Print the actual data (if the tensors are not too large)
+        print("Data in vel:", vel)
+        print("Data in temp:", temp)
+        
         input = torch.cat((temp, vel), dim=1)
         if self.cfg.train.use_coords:
             input = torch.cat((coords, input), dim=1)
@@ -84,9 +91,11 @@ class TempTrainer:
             vel = vel.to(self.local_rank).float()
             label = label.to(self.local_rank).float()
             coords, temp, vel, label = downsample_domain(self.cfg.train.downsample_factor, coords, temp, vel, label)
-
+            
             pred = self.push_forward_trick(coords, temp, vel)
-
+            print("Shape of vel:", vel.shape)
+            print("Shape of temp:", temp.shape)
+    
             print(pred.size(), label.size())
 
             loss = self.loss(pred, label)

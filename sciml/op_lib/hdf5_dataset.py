@@ -250,3 +250,74 @@ class TempVelDataset(HDF5Dataset):
             temp.unsqueeze_(-1)
         base_time = timestep + self.time_window
         self._data['temp'][base_time:base_time + self.future_window] = temp
+        
+class VelInputDataset(HDF5Dataset):
+    r""" 
+    This is a dataset for predicting only velocity. It assumes that
+    dfun are known at t, vel at t is also known. It also enables writing
+    past predictions for velocities and using them to make future
+    predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        self.in_channels = 3 * self.time_window  #2 for current velocity 1 for current dfun 
+        self.out_channels =2 * self.future_window #for two future velocity vx and vy 
+
+    def __getitem__(self, timestep):
+        # past velocity
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0)
+        base_time = timestep + self.time_window 
+        label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0)
+        # past and future dfun
+        dfun = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0)
+        vel = vel.unsqueeze(0);
+        label = label.unsqueeze(0);
+        dfun = dfun.unsqueeze(0);
+        return self._transform(vel, dfun, label)
+
+    def write_vel(self, vel, timestep):
+        base_time = timestep + self.time_window
+        self._data['velx'][base_time:base_time + self.future_window] = vel[0::2]
+        self._data['vely'][base_time:base_time + self.future_window] = vel[1::2]
+
+class VelCoordInputDataset(HDF5Dataset):
+    r""" 
+    This is a dataset for predicting only velocity. It assumes that
+    dfun are known at t and t+1, vel at t is also known. It also enables writing
+    past predictions for velocities and using them to make future
+    predictions.
+    """
+    def __init__(self,
+                 filename,
+                 steady_time,
+                 use_coords,
+                 transform=False,
+                 time_window=1,
+                 future_window=1,
+                 push_forward_steps=1):
+        super().__init__(filename, steady_time, transform, time_window, future_window, push_forward_steps)
+        coords_dim = 2 if use_coords else 0
+        self.in_channels = coords_dim + 3 * self.time_window #2 for current velocity 1 for current dfun 
+        self.out_channels =2 * self.future_window #for two future velocity vx and vy 
+
+    def __getitem__(self, timestep):
+        coords = self._get_coords(timestep).unsqueeze(0);
+        # past velocity
+        vel = torch.cat([self._get_vel_stack(timestep + k) for k in range(self.time_window)], dim=0).unsqueeze(0);
+        base_time = timestep + self.time_window 
+        label = torch.cat([self._get_vel_stack(base_time + k) for k in range(self.future_window)], dim=0).unsqueeze(0);
+        # past and future dfun
+        dfun = torch.stack([self._get_dfun(timestep + k) for k in range(self.time_window)], dim=0).unsqueeze(0);
+        return self._transform(coords, vel, dfun, label)
+    
+    def write_vel(self, vel, timestep):
+        base_time = timestep + self.time_window
+        self._data['velx'][base_time:base_time + self.future_window] = vel[0::2]
+        self._data['vely'][base_time:base_time + self.future_window] = vel[1::2]

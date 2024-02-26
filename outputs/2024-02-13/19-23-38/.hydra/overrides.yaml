@@ -1,0 +1,4 @@
+- dataset=PB_SubCooled
+- experiment=paper/test/pb_vel
+- data_base_dir=/share/crsp/lab/amowli/share/BubbleML2
+- log_dir=./
