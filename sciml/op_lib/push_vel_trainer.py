@@ -98,7 +98,7 @@ class PushVelTrainer:
     def _forward_int(self, coords, temp, vel, dfun, t=None):
         # TODO: account for possibly different timestep sizes of training data
         input = torch.cat((temp, vel, dfun), dim=1)
-        print("SHAPE: ", input.shape)
+        #print("SHAPE: ", input.shape)
         if self.use_coords:
             input = torch.cat((coords, input), dim=1)
             
