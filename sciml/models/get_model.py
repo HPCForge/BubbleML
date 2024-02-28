@@ -4,6 +4,7 @@ from .factorized_fno.factorized_fno import FNOFactorized2DBlock
 from .gefno.gfno import GFNO2d
 from .pdebench.unet import UNet2d 
 from .pdearena.unet import Unet, FourierUnet
+from op_lib.trunk_wrapper import trunk_wrapper
 
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -20,6 +21,8 @@ _FFNO = 'factorized_fno'
 
 _GFNO = 'gfno'
 
+_TRUNK = 'trunk'
+
 _MODEL_LIST = [
     _UNET_BENCH,
     _UNET_ARENA,
@@ -27,7 +30,8 @@ _MODEL_LIST = [
     _FNO,
     _UNO,
     _FFNO,
-    _GFNO
+    _GFNO,
+    _TRUNK
 ]
 
 def get_model(model_name,
@@ -98,6 +102,20 @@ def get_model(model_name,
                        width=exp.model.width,
                        reflection=exp.model.reflection,
                        domain_padding=exp.model.domain_padding) # padding is NEW
+    elif model_name == _TRUNK:
+        trunk, exp = exp
+        model_name = exp.model.model_name.lower()
+
+        model = trunk_wrapper(
+            model_name,
+            in_channels, 
+            out_channels,
+            domain_rows,
+            domain_cols,
+            trunk.trunk_depth,
+            exp,
+            trunk.use_bias
+        )
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()

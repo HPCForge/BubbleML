@@ -186,7 +186,7 @@ class DiskTempVelDataset(DiskHDF5Dataset):
         Get the windows rooted at {timestep, timestep + self.future_window, ...}
         For each variable, the windows are concatenated into one tensor.
         """
-        args = list(zip(*[self._get_timestep(timestep + k * self.future_window) for k in range(self.push_forward_steps)]))
+        args = list(zip(*[self._get_timestep(timestep + k * self.future_window) for k in range(self.push_forward_steps)])) 
         return tuple([torch.stack(arg, dim=0) for arg in args])
 
     #def write_vel(self, vel, timestep):

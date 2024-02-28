@@ -1,3 +1,4 @@
+from omegaconf import OmegaConf
 import torch
 from torch import nn
 import torchvision
@@ -67,7 +68,7 @@ class VelTrainer:
         for iter, (input, label) in enumerate(self.train_dataloader):
             input = input.cuda().float()
             label = label.cuda().float()
-            pred = self.model(input)
+            pred = self.model(input) #per batch: tensor(17, 512, 512)  -> per batch:  tensor(10, 512, 512)
             print(pred.size(), label.size())
             temp_loss = self.loss(pred[:, 0], label[:, 0])
             velx_loss = self.loss(pred[:, 1], label[:, 1])

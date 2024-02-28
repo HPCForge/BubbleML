@@ -1,3 +1,4 @@
+from omegaconf import OmegaConf
 import torch
 from torch import nn
 import torchvision
@@ -9,6 +10,7 @@ import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from omegaconf import OmegaConf
 from pathlib import Path
 
 from .hdf5_dataset import HDF5Dataset, TempVelDataset
@@ -20,6 +22,7 @@ from .dist_utils import local_rank, is_leader_process
 from .downsample import downsample_domain
 
 from torch.cuda import nvtx 
+
 
 t_bulk_map = {
     'wall_super_heat': 58,
@@ -38,6 +41,7 @@ class PushVelTrainer:
                  val_variable,
                  writer,
                  cfg):
+        self.trunk = OmegaConf.get_node(cfg, 'trunk_depth') is not None
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
@@ -92,12 +96,14 @@ class PushVelTrainer:
                 self.test(val_dataset)
                 self.save_checkpoint(log_dir, dataset_name)
 
-    def _forward_int(self, coords, temp, vel, dfun):
+    def _forward_int(self, coords, temp, vel, dfun, t=None):
         # TODO: account for possibly different timestep sizes of training data
         input = torch.cat((temp, vel, dfun), dim=1)
+        
         if self.use_coords:
             input = torch.cat((coords, input), dim=1)
-        pred = self.model(input)
+            
+        pred = self.model(input, t) if t is not None else self.model(input)
 
         #timesteps = (torch.arange(self.future_window) + 1).cuda().unsqueeze(-1).unsqueeze(-1).float()
         #timesteps /= 10 # timestep size is 0.1 for vel
@@ -126,7 +132,7 @@ class PushVelTrainer:
     def _index_dfun(self, idx, dfun):
         return dfun[:, idx]
 
-    def push_forward_trick(self, coords, temp, vel, dfun, push_forward_steps):
+    def push_forward_trick(self, coords, temp, vel, dfun, push_forward_steps, t=None):
         # TODO: clean this up...
         coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
         assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
@@ -140,14 +146,23 @@ class PushVelTrainer:
         if self.cfg.train.noise and push_forward_steps == 1:
             temp_input += torch.empty_like(temp_input).normal_(0, 0.01)
             vel_input += torch.empty_like(vel_input).normal_(0, 0.01)
-        temp_pred, vel_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input)
+        temp_pred, vel_pred = self._forward_int(coords_input, temp_input, vel_input, dfun_input, t=t)
         return temp_pred, vel_pred
 
     def train_step(self, epoch, max_epochs):
         self.model.train()
 
         # warmup before doing push forward trick
-        for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.train_dataloader):
+        for iter, input in enumerate(self.train_dataloader):
+            if (self.trunk):
+                (coords, temp, vel, dfun, time, temp_label, vel_label) = input
+                time = time.to(local_rank()).float()
+            
+            else:
+                (coords, temp, vel, dfun, temp_label, vel_label) = input
+                time = None
+
+
             coords = coords.to(local_rank()).float()
             temp = temp.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
@@ -155,7 +170,7 @@ class PushVelTrainer:
 
             push_forward_steps = self.push_forward_prob(epoch, max_epochs)
             
-            temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps)
+            temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, time, push_forward_steps, t=time)
 
             idx = (push_forward_steps - 1)
             temp_label = temp_label[:, idx].to(local_rank()).float()
