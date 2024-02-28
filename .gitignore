@@ -22,6 +22,8 @@ slurm*.out
 *.sub
 env.sh
 
+/outputs
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

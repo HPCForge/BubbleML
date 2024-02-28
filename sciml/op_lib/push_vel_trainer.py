@@ -23,7 +23,6 @@ from .downsample import downsample_domain
 
 from torch.cuda import nvtx 
 
-
 t_bulk_map = {
     'wall_super_heat': 58,
     'subcooled': 50
@@ -41,7 +40,7 @@ class PushVelTrainer:
                  val_variable,
                  writer,
                  cfg):
-        self.trunk = OmegaConf.get_node(cfg, 'trunk_depth') is not None
+        self.trunk = not OmegaConf.is_missing(cfg, "trunk")
         self.model = model
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
@@ -99,7 +98,7 @@ class PushVelTrainer:
     def _forward_int(self, coords, temp, vel, dfun, t=None):
         # TODO: account for possibly different timestep sizes of training data
         input = torch.cat((temp, vel, dfun), dim=1)
-        
+        print("SHAPE: ", input.shape)
         if self.use_coords:
             input = torch.cat((coords, input), dim=1)
             
@@ -134,8 +133,12 @@ class PushVelTrainer:
 
     def push_forward_trick(self, coords, temp, vel, dfun, push_forward_steps, t=None):
         # TODO: clean this up...
-        coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
-        assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
+        if(t is None):
+            coords_input, temp_input, vel_input, dfun_input = self._index_push(0, coords, temp, vel, dfun)
+            assert self.future_window == temp_input.size(1), 'push-forward expects history size to match future'
+        else:
+            coords_input, temp_input, vel_input, dfun_input = coords, temp, vel, dfun
+        
         coords_input, temp_input, vel_input, dfun_input = \
                 downsample_domain(self.cfg.train.downsample_factor, coords_input, temp_input, vel_input, dfun_input)
         with torch.no_grad():
@@ -170,7 +173,7 @@ class PushVelTrainer:
 
             push_forward_steps = self.push_forward_prob(epoch, max_epochs)
             
-            temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, time, push_forward_steps, t=time)
+            temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps, time)
 
             idx = (push_forward_steps - 1)
             temp_label = temp_label[:, idx].to(local_rank()).float()

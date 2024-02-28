@@ -91,9 +91,10 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
             input = (coords, temp, vel, dfun)
             
             for t in range(fw):
-                inbatch += [input + (torch.tensor(t, device=data[0][0].device),)]
-                labelbatch += [(temp_label[t], vel_label[t])]
-        return tuple(list(map(torch.stack, zip(*inbatch)))+list(map(torch.stack, zip(*labelbatch))))
+                inbatch += [input + (torch.tensor(t, device=data[0][0].device).unsqueeze(0),)]
+                labelbatch += [(temp_label[:, t], vel_label[:, t])]
+        del pack
+        return tuple(list(map(torch.cat, zip(*inbatch)))+list(map(torch.cat, zip(*labelbatch))))
     if cfg.experiment.distributed:
         train_sampler = DistributedSampler(dataset=train_dataset,
                                            shuffle=cfg.experiment.train.shuffle_data)
@@ -108,14 +109,14 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
                                   shuffle=train_shuffle,
                                   batch_size=cfg.experiment.train.batch_size,
                                   num_workers=4,
-                                  collate_fn=None if cfg.trunk_config is not None else collate_fn
+                                  collate_fn=None if OmegaConf.is_missing(cfg.experiment, "trunk") else collate_fn,
                                   pin_memory=True,
                                   prefetch_factor=2)
     val_dataloader = DataLoader(val_dataset, 
                                 sampler=val_sampler,
                                 batch_size=cfg.experiment.train.batch_size,
                                 shuffle=False,
-                                 collate_fn=None if cfg.trunk_config is not None else collate_fn
+                                collate_fn=None if OmegaConf.is_missing(cfg.experiment, "trunk") else collate_fn,
                                 num_workers=2,
                                 pin_memory=True,
                                 prefetch_factor=2)
@@ -127,6 +128,7 @@ def nparams(model):
 
 @hydra.main(version_base=None, config_path='../conf', config_name='default')
 def train_app(cfg):
+
     print(OmegaConf.to_yaml(cfg))
     print(cfg.dataset.train_paths)
     assert cfg.test or cfg.train
@@ -160,9 +162,9 @@ def train_app(cfg):
     #val_variable = int(tail[:-5])
     #print('T_wall of val sim: ', val_variable)
     val_variable = 0
+            
+    exp = cfg.experiment
 
-    exp = cfg.experiment 
-    trunk = cfg.trunk_config
     model_name = exp.model.model_name.lower()
     in_channels = train_dataset.datasets[0].in_channels
     out_channels = train_dataset.datasets[0].out_channels
@@ -173,10 +175,6 @@ def train_app(cfg):
     downsampled_rows = domain_rows / downsample_factor[0]
     downsampled_cols = domain_cols / downsample_factor[1]
 
-    if (trunk is not None):
-        model_name = 'trunk'
-        exp = OmegaConf.merge(trunk, exp)
-        
     model = get_model(model_name,
                     in_channels,
                     out_channels,
