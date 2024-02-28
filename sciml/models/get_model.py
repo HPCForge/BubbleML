@@ -103,10 +103,10 @@ def get_model(model_name,
                        reflection=exp.model.reflection,
                        domain_padding=exp.model.domain_padding) # padding is NEW
     elif model_name == _CNO:
-        model = CNO(in_dim = in_channels, 
-                    in_size = exp.model.in_size, 
-                    N_layers = exp.model.n_layers,
-                    out_dim = exp.train.future_window)
+        model = CNO(in_dim=in_channels, 
+                    in_size=exp.model.in_size, 
+                    N_layers=exp.model.n_layers,
+                    out_dim=exp.train.future_window)
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])
         model = model.to(local_rank).float()
