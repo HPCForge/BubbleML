@@ -12,4 +12,4 @@ model_checkpoint:
 defaults:
   - _self_
   - dataset: PB_WallSuperHeat
-  - experiment: temp_unet2d
+  - experiment: paper/unet_arena/pb_temp
