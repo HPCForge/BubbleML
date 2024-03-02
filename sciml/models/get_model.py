@@ -105,7 +105,7 @@ def get_model(model_name,
     if (not OmegaConf.is_missing(exp, "trunk")):
         model = TrunkWrapper(
             model, 
-            in_channels,
+            exp.model.forward_window,
             out_channels,
             domain_rows,
             domain_cols,

@@ -6,15 +6,16 @@ import yaml
 class TrunkWrapper(torch.nn.Module):
     def __init__(self, 
             model, 
-            in_channels,
+            forward_window,
             out_channels,
             domain_rows,
             domain_cols,
             trunk_depth,
-            use_bias = True,
+            use_bias = True
             ):
             super().__init__()
             self.trunk_depth = trunk_depth
+            self.fw = forward_window
             self.use_bias = use_bias
             self.out_channels = out_channels
             self.domain_rows = domain_rows
@@ -57,7 +58,11 @@ class TrunkWrapper(torch.nn.Module):
 
     def forward(self, x_branch, query_vector):
         # tenor.tensor(i for i in range(past_window))
-        x_branch = self.module_list["Branch"](x_branch)
+        if self.training:
+            x_branch = self.module_list["Branch"](x_branch[::self.fw, ...])
+            x_branch = x_branch.repeat_interleave(x_branch, self.fw, dim=0)
+        else:
+            x_branch = self.module_list["Branch"](x_branch)
 
         for i in range(1, self.trunk_depth): 
             query_vector = self.module_list[f'TrActM{i}'](query_vector)
