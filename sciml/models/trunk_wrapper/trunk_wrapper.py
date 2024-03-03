@@ -60,7 +60,7 @@ class TrunkWrapper(torch.nn.Module):
         # tenor.tensor(i for i in range(past_window))
         if self.training:
             x_branch = self.module_list["Branch"](x_branch[::self.fw, ...])
-            x_branch = x_branch.repeat_interleave(x_branch, self.fw, dim=0)
+            x_branch = torch.repeat_interleave(x_branch, self.fw, dim=0)
         else:
             x_branch = self.module_list["Branch"](x_branch)
 
