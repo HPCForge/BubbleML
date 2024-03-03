@@ -65,6 +65,7 @@ class TrunkWrapper(torch.nn.Module):
             x_branch = self.module_list["Branch"](x_branch)
 
         for i in range(1, self.trunk_depth): 
+            query_vector = self.module_list[f'TrLinM{i}'](query_vector)
             query_vector = self.module_list[f'TrActM{i}'](query_vector)
 
         query_vector = torch.reshape(query_vector, x_branch.shape)
