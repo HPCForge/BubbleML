@@ -103,6 +103,11 @@ def get_model(model_name,
                        domain_padding=exp.model.domain_padding) # padding is NEW
     
     if (not OmegaConf.is_missing(exp, "trunk")):
+        if exp.torch_dataset_name == 'temp_input_dataset':
+            func_num = 1
+        else:
+            func_num = 3
+    
         model = TrunkWrapper(
             model, 
             exp.train.future_window,
@@ -110,7 +115,8 @@ def get_model(model_name,
             domain_rows,
             domain_cols,
             exp.trunk.trunk_depth,
-            exp.trunk.use_bias
+            exp.trunk.use_bias,
+            func_number=func_num
         )
     if exp.distributed:
         local_rank = int(os.environ['LOCAL_RANK'])

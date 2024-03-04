@@ -116,9 +116,9 @@ class PushVelTrainer:
         #last_vel_input = vel[:, -2:].repeat(1, self.future_window, 1, 1)
         #timesteps_interleave = torch.repeat_interleave(timesteps, 2, dim=0) 
         #vel_pred = last_vel_input + timesteps_interleave * d_vel
-
-        temp_pred = pred[:, :self.future_window]
-        vel_pred = pred[:, self.future_window:]
+        range = self.future_window if t is None else 1
+        temp_pred = pred[:, :range]
+        vel_pred = pred[:, range:]
 
         return temp_pred, vel_pred
 
@@ -175,10 +175,14 @@ class PushVelTrainer:
             
             temp_pred, vel_pred = self.push_forward_trick(coords, temp, vel, dfun, push_forward_steps, time)
 
-            idx = (push_forward_steps - 1)
-            temp_label = temp_label[:, idx].to(local_rank()).float()
-            idx = (push_forward_steps - 1)
-            vel_label = vel_label[:, idx].to(local_rank()).float()
+            if time is None:
+                idx = (push_forward_steps - 1)
+                temp_label = temp_label[:, idx]
+                idx = (push_forward_steps - 1)
+                vel_label = vel_label[:, idx]
+
+            temp_label = temp_label.to(local_rank()).float()
+            vel_label = vel_label.to(local_rank()).float()
 
             temp_label, vel_label = downsample_domain(self.cfg.train.downsample_factor, temp_label, vel_label)
 

@@ -92,7 +92,7 @@ def build_dataloaders(train_dataset, val_dataset, cfg):
             
             for t in range(fw):
                 inbatch += [input + (torch.tensor(t, device=data[0][0].device).unsqueeze(0),)]
-                labelbatch += [(temp_label[:, t], vel_label[:, t])]
+                labelbatch += [(temp_label[:, t].unsqueeze(1), vel_label[:, t*2:(t+1)*2])]
         del pack
         return tuple(list(map(torch.cat, zip(*inbatch)))+list(map(torch.cat, zip(*labelbatch))))
     if cfg.experiment.distributed:

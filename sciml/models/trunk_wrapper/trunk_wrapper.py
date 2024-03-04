@@ -11,9 +11,11 @@ class TrunkWrapper(torch.nn.Module):
             domain_rows,
             domain_cols,
             trunk_depth,
-            use_bias = True
+            use_bias = True,
+            func_number = 1
             ):
             super().__init__()
+            self.func_number = func_number
             self.trunk_depth = trunk_depth
             self.fw = forward_window
             self.use_bias = use_bias
@@ -34,25 +36,27 @@ class TrunkWrapper(torch.nn.Module):
         module_list = torch.nn.ModuleDict()
         module_list["Branch"] = self.model
         
-        module_list['TrLinM1'] = torch.nn.Linear(1, self.width)
-        module_list['TrActM1'] = torch.nn.ReLU()
-        for i in range(2, self.trunk_depth):
-            module_list['TrLinM{}'.format(i)] = torch.nn.Linear(self.width, self.width)
-            module_list['TrActM{}'.format(i)] = torch.nn.ReLU()
+        for j in range(1, self.func_number+1):
+            module_list['Tr{}LinM1'.format(j)] = torch.nn.Linear(1, self.width//self.func_number)
+            module_list['Tr{}ActM1'.format(j)] = torch.nn.ReLU()
+            for i in range(2, self.trunk_depth):
+                module_list['Tr{}LinM{}'.format(j, i)] = torch.nn.Linear(self.width//self.func_number, self.width//self.func_number)
+                module_list['Tr{}ActM{}'.format(j, i)] = torch.nn.ReLU()
 
         
         return module_list
     
     def __init_params(self):
         params = torch.nn.ParameterDict()
-        params['bias'] = torch.nn.Parameter(torch.zeros([1]))
+        params['bias'] = torch.nn.Parameter(torch.zeros([self.func_number]))
         return params
 
     
     def __initialize(self):
-        for i in range(1, self.trunk_depth):
-            torch.nn.init.kaiming_normal_(self.module_list['TrLinM{}'.format(i)].weight)
-            torch.nn.init.constant_(self.module_list['TrLinM{}'.format(i)].bias, 0)
+        for j in range(1, 1, self.func_number+1):
+            for i in range(1, self.trunk_depth):
+                torch.nn.init.kaiming_normal_(self.module_list['Tr{}LinM{}'.format(j, i)].weight)
+                torch.nn.init.constant_(self.module_list['Tr{}LinM{}'.format(j, i)].bias, 0)
 
     def forward(self, x_branch, query_vector):
         # tenor.tensor(i for i in range(past_window))
@@ -61,15 +65,25 @@ class TrunkWrapper(torch.nn.Module):
             x_branch = torch.repeat_interleave(x_branch, self.fw, dim=0)
         else:
             x_branch = self.module_list["Branch"](x_branch)
-        
-        query_vector = torch.transpose(query_vector, 0, 1)
-        for i in range(1, self.trunk_depth): 
-            query_vector = self.module_list[f'TrLinM{i}'](query_vector)
-            query_vector = self.module_list[f'TrActM{i}'](query_vector)
 
-        query_vector = torch.reshape(query_vector, x_branch.shape)
-        
-        return torch.sum(x_branch * query_vector, dim=1) + self.params['bias']
+        query_vector = [query_vector.reshape(1, -1).t().reshape(-1, 1)]*self.func_number
+
+        for j in range(self.func_number):
+            for i in range(1, self.trunk_depth): 
+                query_vector[j] = self.module_list[f'Tr{j+1}LinM{i}'](query_vector[j])
+                query_vector[j] = self.module_list[f'Tr{j+1}ActM{i}'](query_vector[j])
+
+        shape = (*x_branch.shape[:-3], self.out_channels//self.func_number, *x_branch.shape[-2:])
+        query_vector = torch.cat([torch.reshape(vec, shape) for vec in query_vector], dim = -3)
+
+        out = []
+        for i in range(self.func_number):
+            start = i*(self.out_channels//self.func_number)
+            end = (i+1)*(self.out_channels//self.func_number)
+            out += [torch.sum(x_branch[:,start:end] * query_vector[:,start:end], dim=1, keepdim=True) + self.params['bias'][i]]
+
+        out = torch.cat(out, dim = -3)
+        return out
 
     
 

@@ -4,7 +4,7 @@ distributed: False
 
 train:
   max_epochs: 250 
-  batch_size: 2
+  batch_size: 1
   shuffle_data: True
   time_window: 5
   future_window: 5
