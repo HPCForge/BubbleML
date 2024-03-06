@@ -92,7 +92,8 @@ class PushVelTrainer:
             self.val_step(epoch)
             if is_leader_process():
                 val_dataset = self.val_dataloader.dataset.datasets[0]
-                self.test(val_dataset)
+                if not self.trunk:
+                    self.test(val_dataset)
                 self.save_checkpoint(log_dir, dataset_name)
 
     def _forward_int(self, coords, temp, vel, dfun, t=None):
@@ -202,18 +203,31 @@ class PushVelTrainer:
 
     def val_step(self, epoch):
         self.model.eval()
-        for iter, (coords, temp, vel, dfun, temp_label, vel_label) in enumerate(self.val_dataloader):
+        for iter, input in enumerate(self.val_dataloader):
+            if (self.trunk):
+                (coords, temp, vel, dfun, time, temp_label, vel_label) = input
+                time = time.to(local_rank()).float()
+            
+            else:
+                (coords, temp, vel, dfun, temp_label, vel_label) = input
+                time = None
+
             coords = coords.to(local_rank()).float()
             temp = temp.to(local_rank()).float()
             vel = vel.to(local_rank()).float()
             dfun = dfun.to(local_rank()).float()
 
             # val doesn't apply push-forward
-            temp_label = temp_label[:, 0].to(local_rank()).float()
-            vel_label = vel_label[:, 0].to(local_rank()).float()
+            if time is not None:
+                temp_label = temp_label[:, 0].to(local_rank()).float()
+                vel_label = vel_label[:, 0].to(local_rank()).float()    
+                coords = coords[:, 0]
+                temp = temp[:, 0]
+                vel = vel[:, 0]
+                dfun = dfun[:, 0]
 
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+                temp_pred, vel_pred = self._forward_int(coords, temp, vel, dfun, time)
                 temp_loss = F.mse_loss(temp_pred, temp_label)
                 vel_loss = F.mse_loss(vel_pred, vel_label)
                 loss = (temp_loss + vel_loss) / 2
@@ -240,7 +254,7 @@ class PushVelTrainer:
             temp_label = temp_label[0].to(local_rank()).float()
             vel_label = vel_label[0].to(local_rank()).float()
             with torch.no_grad():
-                temp_pred, vel_pred = self._forward_int(coords[:, 0], temp[:, 0], vel[:, 0], dfun[:, 0])
+                temp_pred, vel_pred = self._forward_int(coords, temp, vel, dfun, t=tim )
                 temp_pred = temp_pred.squeeze(0)
                 vel_pred = vel_pred.squeeze(0)
                 dataset.write_temp(temp_pred, timestep)
