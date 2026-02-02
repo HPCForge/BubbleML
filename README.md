@@ -1,12 +1,23 @@
 # BubbleML
-
-[![Paper](https://img.shields.io/badge/arXiv-2209.15616-blue)](https://arxiv.org/abs/2307.14623)
+**Accepted to NeurIPS 2023 as a [Spotlight Paper 🏅](https://proceedings.neurips.cc/paper_files/paper/2023/hash/01726ae05d72ddba3ac784a5944fa1ef-Abstract-Datasets_and_Benchmarks.html)**
 
 A multiphase, multiphysics dataset of boiling processes. These simulations can be used to model datacenter cooling systems, like liquid cooling flowing across a GPU. They can even model the cooling of nuclear waste: a pool of liquid sitting on a heated surface.
 
 ![SubCooled Temperature](video/subcooled.gif)
 
 We hope that BubbleML will be useful to members of the Thermal Science community who are interested in exploring and applying machine learning techniques. We also believe this dataset offers interesting challenges to the scientific machine learning community: handling multiphase data, handling complex boundary conditions, achieving stability in long auto-regressive rollouts, etc.
+
+## Follow-up Work: Bubbleformer
+**Accepted to NeurIPS 2025 as a Spotlight Paper🏅**
+
+[[Paper]](https://neurips.cc/virtual/2025/loc/san-diego/poster/121854) [[Poster]](media/Poster_NIPS25_Bubbleformer_FINAL.pdf) [[Dataset on Hugging Face (BubbleML 2.0)]](https://huggingface.co/datasets/hpcforge/BubbleML_2)
+
+We introduce **Bubbleformer**, a transformer-based spatiotemporal model that forecasts stable and long-range boiling dynamics—including nucleation, liquid-vapor interface evolution, and heat transfer—without dependence on simulation data during inference.
+
+The project combines:
+
+- **Bubbleformer**: A novel transformer architecture for forecasting multiphase fluid dynamics
+- **BubbleML 2.0**: A comprehensive dataset of boiling simulations across diverse fluids and configurations
 
 ## Documentation and Examples
 
